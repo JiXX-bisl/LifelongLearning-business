@@ -1,0 +1,34 @@
+model:
+  type: openai_compatible
+  model_name: kimi-k2.6
+  api_key_env: OPENAI_API_KEY
+  base_url_env: OPENAI_BASE_URL
+
+database:
+  host: 127.0.0.1
+  port: 3306
+  user: synthetic
+  password_env: ENTERPRISE_MYSQL_PASSWORD
+  connection_timeout_seconds: 10
+  fetch_batch_size: 50
+  max_total_rows: 500
+
+data:
+  baseline_dir: data/sql/synthetic_enterprise_v30_120_v1.0.2
+  expected_baseline_id: synthetic_enterprise_v30_120_v1.0.2
+  expected_schema_version: "3.0"
+
+output:
+  directory: data/logs/business/query_v30_120_v1_0_2
+
+prompt:
+  profile: basic_field_mapping_v1
+  rules_file: src/chatflow_agent/prompts/enterprise_query_basic_v1.txt
+  field_mapping_file: src/chatflow_agent/prompts/enterprise_field_mapping_v1.json
+
+learning:
+  mode: standard
+  experiment_id: v30_120_v1_0_2_cold_start
+  utilized_sample_count: 4
+  group_count: 2
+  sample_count_per_group: 2

@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug PSU Memory Quality Assessment",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.psu_memory.cli.assess_quality",
+            "pythonArgs": [
+                "-B"
+            ],
+            "args": [
+                "--store",
+                "data/derived/psu_memory/history.sqlite3",
+                "--namespace",
+                "local-development",
+                "--data-version",
+                "synthetic_enterprise_v21_40_v1.0.0",
+                "--report",
+                "data/derived/psu_memory/quality_report_repeat.json"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

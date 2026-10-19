@@ -1,0 +1,12 @@
+# Tested in llm_api: Python 3.11, native macOS ARM64, Apple M4.
+# Install with: python -m pip install -r requirements-embedding.txt
+FlagEmbedding==1.4.2
+torch==2.14.1
+transformers==4.57.6
+sentence-transformers==5.7.0
+peft==0.21.2
+accelerate==1.15.0
+datasets==5.0.1
+huggingface-hub==0.36.2
+numpy==1.26.4
+PyYAML==6.0.2

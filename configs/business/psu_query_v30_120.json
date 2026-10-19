@@ -1,0 +1,15 @@
+{
+  "psu_enabled": false,
+  "update_enabled": false,
+  "initial_state": "empty",
+  "business_config": "configs/business/query_v30_120.yaml",
+  "source_store": null,
+  "store_path": "data/derived/psu_memory/query_v30_120_v1_0_2_cold_start/history.sqlite3",
+  "namespace": "cold-start-v30-120-v1.0.2",
+  "data_version": "synthetic_enterprise_v30_120_v1.0.2",
+  "retrieval_config": "src/psu_memory/retrieval/retrieval_config.example.json",
+  "pool_config": "src/psu_memory/pool/pool_config.example.json",
+  "evaluation_root": null,
+  "retrieval_limit": 1,
+  "max_context_chars": null
+}

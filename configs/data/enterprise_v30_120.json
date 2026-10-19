@@ -1,0 +1,52 @@
+{
+  "baseline_id": "synthetic_enterprise_v30_120_v1.0.2",
+  "schema_version": "3.0",
+  "enterprise_count": 120,
+  "seed": 20261012,
+  "source_data": "data/sql/synthetic_enterprise_v21_40_v1.0.0/六表数据_01-40_修正.json",
+  "source_profiles": "history_files/data/archive/source_materials/虚构企业画像配置清单.json",
+  "scenario_definitions": "configs/data/enterprise_v30_scenarios.json",
+  "retained_candidates": ["synthetic_enterprise_v30_120_v1.0.0", "synthetic_enterprise_v30_120_v1.0.1"],
+  "public_output": "data/sql/synthetic_enterprise_v30_120_v1.0.2",
+  "private_output": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2",
+  "reference_date": "2026-08-31",
+  "knowledge_cutoff": "2026-09-15 23:59:59",
+  "window_start": "2024-09-01",
+  "window_end": "2026-08-31",
+  "profile_dates": ["2025-08-31", "2025-12-31", "2026-03-31", "2026-08-31"],
+  "mysql": {"version": "8.0", "database": "synthetic_enterprise_v30_120", "charset": "utf8mb4", "collation": "utf8mb4_0900_ai_ci"},
+  "generation": {
+    "normal_monthly_variation": "0.05",
+    "new_enterprise_scale_min": "0.70",
+    "new_enterprise_scale_max": "1.40",
+    "source_system": "企业报送系统",
+    "report_status": "正式"
+  },
+  "pollution": {
+    "old_distribution": {"none": 10, "single": 20, "double": 10},
+    "new_distribution": {"none": 20, "single": 40, "double": 20},
+    "rates": {
+      "duplicate_submission": "0.06",
+      "missing_field": "0.08",
+      "missing_month": "0.03",
+      "delayed_report": "0.08",
+      "unit_representation": "0.05",
+      "cross_field_conflict": "0.02"
+    },
+    "max_operations_per_record": 2,
+    "max_modified_fraction": "0.15",
+    "max_consecutive_missing_months": 2,
+    "minimum_missing_field_enterprises": 12,
+    "minimum_missing_month_enterprises": 12
+  },
+  "coverage_requirements": {
+    "categories": ["A1", "A2", "A4", "A5", "B2", "B3", "C1", "C2", "C4", "C6"],
+    "minimum_enterprises_per_category": 6,
+    "minimum_old_per_category": 2,
+    "minimum_new_per_category": 2,
+    "minimum_zero_enterprises": 12,
+    "minimum_equal_real_and_duplicate_enterprises": 12,
+    "minimum_revision_enterprises": 12,
+    "minimum_ratio_comparison_enterprises": 12
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "policy": "sql_result_direct_v1",
+  "data_version": "synthetic_enterprise_v30_120_v1.0.2",
+  "namespace": "validation-v30-120-v1.0.2-natural-v0.2.1-reviewed-direct-v1",
+  "questions": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_2_1_reviewed/questions.json",
+  "ground_truth": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_2_1_reviewed/ground_truth.json",
+  "public_context": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_2_1_reviewed/business_context.json",
+  "business_config": "configs/business/query_v30_120.yaml",
+  "retrieval_config": "src/psu_memory/retrieval/retrieval_config.example.json",
+  "pool_config": "src/psu_memory/pool/pool_config.example.json",
+  "conditions": ["baseline", "adaptive"],
+  "initial_state": "empty",
+  "source_store": null,
+  "acceptance_report": "data/reports/enterprise_v30_120/database_acceptance.json",
+  "require_dataset_acceptance": true,
+  "exclude_case_ids": ["A2-L1-02", "A2-L3-02"]
+}

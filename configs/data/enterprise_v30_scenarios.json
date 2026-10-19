@@ -1,0 +1,472 @@
+{
+  "version": "1.0.2",
+  "scenario_families": [
+    2,
+    8,
+    14,
+    20,
+    26,
+    32
+  ],
+  "equal_revenue_families": [
+    1,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32,
+    34,
+    36,
+    38
+  ],
+  "learning_phases": {
+    "typical": "L1",
+    "transfer": "L2",
+    "counterexample": "L3"
+  },
+  "categories": {
+    "A1": {
+      "mechanism": "自然人、任职与报送记录分别有person_entity_id、assignment_id、person_id；姓名只是属性。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "自然人数与任职次数",
+        "expected_behavior": "同一person_entity_id计一人，不同assignment_id分别保留任职次数。",
+        "contrasting_scopes": [
+          "自然人数",
+          "任职事实数",
+          "报送行数"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "跨企业自然人数",
+        "expected_behavior": "同一个自然人在两家企业任职仍为一人，任职事实分别计入各企业。",
+        "contrasting_scopes": [
+          "跨企业唯一自然人数",
+          "各企业任职次数"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "同名但身份不同的人员及原始报送行",
+        "expected_behavior": "同名异人的person_entity_id不同，分别计数；要求报送行数时保留各person_id。",
+        "contrasting_scopes": [
+          "姓名相同",
+          "自然人身份相同",
+          "报送记录相同"
+        ]
+      },
+      "observed_dimensions": [
+        "person_entity_id",
+        "assignment_id",
+        "person_id",
+        "person_name",
+        "enterprise_id",
+        "report_revision"
+      ]
+    },
+    "A2": {
+      "mechanism": "合同本金、未偿本金、逾期本金及余额日期有独立字段，合同状态过程按同一business_object_ref留存。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "历史借款本金与观察日未偿本金",
+        "expected_behavior": "历史本金仍存在但已还清合同的未偿本金为零。",
+        "contrasting_scopes": [
+          "合同初始本金",
+          "基准日未偿本金"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "历史逾期发生额与当前逾期余额",
+        "expected_behavior": "已结清的历史逾期发生额不能算入当前逾期本金。",
+        "contrasting_scopes": [
+          "曾经逾期发生额",
+          "当前逾期本金"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "当前仍未清偿的逾期本金",
+        "expected_behavior": "合同未结清时保留观察日实际逾期余额，不能因存在历史处理记录就推断归零。",
+        "contrasting_scopes": [
+          "有历史处理记录",
+          "当前已结清",
+          "当前仍有逾期"
+        ]
+      },
+      "observed_dimensions": [
+        "business_object_ref",
+        "amount",
+        "outstanding_principal",
+        "overdue_principal",
+        "balance_as_of_date",
+        "event_status"
+      ]
+    },
+    "A4": {
+      "mechanism": "月报保留统计月份、实际覆盖起止日期、报送及入库时间；八月底经营可在九月采集截止前补报。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "8月底业务事实",
+        "expected_behavior": "9月报送的8月经营仍属8月事实。",
+        "contrasting_scopes": [
+          "业务所属月",
+          "报送月"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "8月31日系统当时已知的事实",
+        "expected_behavior": "知识时点排除当时尚未入库的8月底报表，说明信息范围。",
+        "contrasting_scopes": [
+          "最终业务事实",
+          "当时系统已知的信息"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "9月收到的报送记录",
+        "expected_behavior": "若问题明确按接收时间统计，9月接收应计入9月接收记录，不能改成业务发生时间。",
+        "contrasting_scopes": [
+          "九月接收记录",
+          "九月经营事实"
+        ]
+      },
+      "observed_dimensions": [
+        "stat_month",
+        "period_start",
+        "period_end",
+        "reported_at",
+        "ingested_at"
+      ]
+    },
+    "A5": {
+      "mechanism": "同来源同业务事实同统计时点有合法原报和修订；事项状态另有生效时间，跨时点不比较修订号取唯一记录。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "3月报表最终业务值",
+        "expected_behavior": "同来源同业务身份的第2修订覆盖第1修订，跨业务时点不能比较修订号取单条。",
+        "contrasting_scopes": [
+          "首次报送值",
+          "合法修订后的业务值"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "事项历史状态与业务及系统知识时点",
+        "expected_behavior": "业务时点与当时已入库信息分别筛选，再依据实际状态过程比较历史与当前范围。",
+        "contrasting_scopes": [
+          "历史生效状态",
+          "历史系统已知状态",
+          "当前状态"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "原始状态报送审计记录",
+        "expected_behavior": "问题明确要求处理过程或原始报送时，各合法版本均应留存，不能只给最新状态。",
+        "contrasting_scopes": [
+          "最终业务值",
+          "全部合法版本明细"
+        ]
+      },
+      "observed_dimensions": [
+        "source_system",
+        "source_record_ref",
+        "stat_month",
+        "report_revision",
+        "state_effective_at",
+        "ingested_at"
+      ]
+    },
+    "B2": {
+      "mechanism": "金额0表示该来源确认零；NULL表示未知或不适用，覆盖表另外说明完整、部分、未采集或不适用范围。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "2月实际缴纳税款",
+        "expected_behavior": "已报送的0.00是确认零支付。",
+        "contrasting_scopes": [
+          "确认零支付",
+          "未知税款",
+          "缺少月报"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "有明确覆盖起止日期的确认零月份",
+        "expected_behavior": "该月确认零不等于未采集，即使其他月未完整采集，也不把已有零报送变为缺报。",
+        "contrasting_scopes": [
+          "本月已知零",
+          "其他期间缺失",
+          "全窗口完整性"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "已明确报送正数的2月",
+        "expected_behavior": "正数月保留其值；其他企业的零值模式不能迁移为本企业零支付。",
+        "contrasting_scopes": [
+          "本企业正数",
+          "其他企业零值模式"
+        ]
+      },
+      "observed_dimensions": [
+        "tax_amount",
+        "period_start",
+        "period_end",
+        "coverage_status",
+        "coverage_start",
+        "coverage_end"
+      ]
+    },
+    "B3": {
+      "mechanism": "不同经营月份具有独立来源业务身份；合法修订保留同业务身份和统计时点，技术主键区分报送行。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "同值不同月份业务收入",
+        "expected_behavior": "11月和12月为两次实际经营事实，不能按金额去重。",
+        "contrasting_scopes": [
+          "相同金额",
+          "相同业务身份"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "真实期间与合法报表修订",
+        "expected_behavior": "不同期间保留，同期间修订按来源与版本识别。",
+        "contrasting_scopes": [
+          "独立期间",
+          "同期间修订"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "审计所需的全部报送版本",
+        "expected_behavior": "报送行统计保留合法版本，业务金额汇总与物理行计数采用各自粒度。",
+        "contrasting_scopes": [
+          "物理报送行数",
+          "有效业务事实数",
+          "业务收入合计"
+        ]
+      },
+      "observed_dimensions": [
+        "stat_month",
+        "monthly_record_id",
+        "source_system",
+        "source_record_ref",
+        "report_revision",
+        "operating_revenue"
+      ]
+    },
+    "C1": {
+      "mechanism": "人员可有多次任职和报送，事件可有状态过程；事项外键指向本企业可靠人员记录，跨企业自然人身份单独保留。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "涉事自然人与企业月度指标",
+        "expected_behavior": "先确定涉事人身份与任期，再按企业月汇总；多张一对多表关联不能放大金额。",
+        "contrasting_scopes": [
+          "自然人",
+          "任职关系",
+          "事件状态记录",
+          "企业月度事实"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "共享自然人关系与各企业事项归属",
+        "expected_behavior": "共享自然人身份保留两边任职；只有事件的实际企业及人员引用支持涉事关系，不能沿共享身份自动转移另一企业事项。",
+        "contrasting_scopes": [
+          "跨企业共享自然人",
+          "本企业实际涉事关系",
+          "另一企业事项归属"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "明确要求人员与事件对应关系明细",
+        "expected_behavior": "关系明细保留每个确切关联，不能因金额相同合并独立关系。",
+        "contrasting_scopes": [
+          "企业汇总",
+          "确切人员事项关系明细"
+        ]
+      },
+      "observed_dimensions": [
+        "enterprise_id",
+        "person_entity_id",
+        "assignment_id",
+        "related_person_id",
+        "business_event_ref",
+        "stat_month"
+      ]
+    },
+    "C2": {
+      "mechanism": "各相邻月份的净利润有业务事实及实际覆盖期间，事项状态另外记录历史发生和处理过程。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "是否曾亏损和是否4至6月全部亏损",
+        "expected_behavior": "曾亏损为真，三个指定月全部亏损为假。",
+        "contrasting_scopes": [
+          "存在亏损月",
+          "三个月全部亏损",
+          "至少连续两个月亏损"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "4至6月连续三月亏损",
+        "expected_behavior": "三个完整相邻月都亏损，连续三月条件成立。",
+        "contrasting_scopes": [
+          "亏损月数量",
+          "相邻完整月连续性"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "三月区间亏损两次能否判连续两月",
+        "expected_behavior": "4和6月亏损但5月盈利，存在两次亏损不能判为连续两月。",
+        "contrasting_scopes": [
+          "区间内两次亏损",
+          "连续两个月亏损"
+        ]
+      },
+      "observed_dimensions": [
+        "stat_month",
+        "period_start",
+        "period_end",
+        "net_profit",
+        "handling_result",
+        "state_effective_at"
+      ]
+    },
+    "C4": {
+      "mechanism": "月度收入和利润为发生额，资产、负债和人数为时点值；不同月份收入权重和利润率可不同，金额单位显式记录。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "两个月整体利润率",
+        "expected_behavior": "总利润除以总收入，与逐月利润率简单平均不同。",
+        "contrasting_scopes": [
+          "整体利润率",
+          "各月利润率算术平均"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "指定期间与金额单位的整体比例",
+        "expected_behavior": "先按公开单位换算，在一致期间口径下使用分子分母总和。",
+        "contrasting_scopes": [
+          "期间发生额",
+          "时点存量",
+          "元",
+          "万元"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "问题明确要求各月利润率的简单平均",
+        "expected_behavior": "按月利润率做算术平均，不能自动替换为按收入加权的整体利润率。",
+        "contrasting_scopes": [
+          "明确所求算术平均",
+          "整体经营比例"
+        ]
+      },
+      "observed_dimensions": [
+        "stat_month",
+        "operating_revenue",
+        "total_profit",
+        "amount_unit",
+        "as_of_date",
+        "total_assets",
+        "total_liabilities"
+      ]
+    },
+    "C6": {
+      "mechanism": "同一企业有多个经营月份及事项状态记录，改变期间、状态时间或筛选条件会改变匹配范围。",
+      "typical": {
+        "response_type": "answer",
+        "target_scope": "4至6月改为4至5月且保留企业条件",
+        "expected_behavior": "追问只替换明确指定的期间，继承企业及其他未变条件，再根据新范围回答。",
+        "contrasting_scopes": [
+          "原期间",
+          "替换后的期间",
+          "继承的企业条件"
+        ]
+      },
+      "transfer": {
+        "response_type": "answer",
+        "target_scope": "将历史发生条件改为基准日当前状态",
+        "expected_behavior": "替换时间与状态口径，继承企业及事项类型，用实际状态过程重新判断匹配范围。",
+        "contrasting_scopes": [
+          "历史发生",
+          "基准日当前状态",
+          "保留的事项类型"
+        ]
+      },
+      "counterexample": {
+        "response_type": "answer",
+        "target_scope": "明确取消某个原筛选条件",
+        "expected_behavior": "取消条件后恢复其原范围，不能把已经取消的限制继续带入追问。",
+        "contrasting_scopes": [
+          "保留的条件",
+          "明确取消的条件"
+        ]
+      },
+      "observed_dimensions": [
+        "enterprise_id",
+        "stat_month",
+        "event_type",
+        "handling_result",
+        "state_effective_at",
+        "ingested_at"
+      ]
+    }
+  },
+  "role_assignment": {
+    "method": "family_category_rotation_v1",
+    "ordered_roles": [
+      "typical",
+      "transfer",
+      "counterexample"
+    ],
+    "category_offsets": {
+      "A1": 0,
+      "A2": 1,
+      "A4": 2,
+      "A5": 0,
+      "B2": 1,
+      "B3": 2,
+      "C1": 0,
+      "C2": 1,
+      "C4": 2,
+      "C6": 0
+    },
+    "formula": "(scenario_family_position + enterprise_generation + category_offset) modulo 3",
+    "business_variant_precedes_role_label": true,
+    "original_enterprises_per_role_per_category": 2,
+    "new_enterprises_per_role_per_category": 4
+  },
+  "response_types": [
+    "answer",
+    "clarify",
+    "insufficient"
+  ],
+  "response_contract": {
+    "answer": "公开业务事实与已明确口径足以支持结果。",
+    "clarify": "存在多个合理口径或可见字段冲突，需要澄清指标、时间或来源。",
+    "insufficient": "所需字段、期间或身份依据缺失，说明不足并保留可回答部分。",
+    "expected_behavior_is_explanation_only": true,
+    "no_question_bank_or_reference_sql": true,
+    "hidden_truth_is_not_required": true
+  }
+}

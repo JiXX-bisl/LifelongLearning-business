@@ -1,0 +1,10 @@
+# Apple M4: use MPS with FP32 initially; enable FP16 after comparing results.
+model_name: BAAI/bge-m3
+revision: 5617a9f61b028005a4858fdac845db406aefb181
+cache_dir: data/models/huggingface
+device: mps
+use_fp16: false
+batch_size: 8
+max_length: 512
+normalize_embeddings: true
+local_files_only: true
