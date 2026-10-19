@@ -7,7 +7,6 @@ from ..pool._common import (
     MATCH_TEXT_RULE_VERSION,
     canonical_json,
     necessary_user_questions,
-    needs_user_context,
     normalize_question_text,
     require_nonnegative_int,
     require_text,
@@ -44,59 +43,51 @@ def validate_request(request: RetrievalRequest) -> None:
             request.max_context_chars, "max_context_chars"
         )
 
-def build_matching_text(question: str, context_text: str = "", *, max_context_questions: int = 2) -> MatchingText:
-    """将当前问题与历史问题使用该函数生成初筛样本"""
+def build_matching_text(
+    question: str,
+    context_text: str = "",
+    *,
+    max_context_questions: int = 2,
+) -> MatchingText:
+    """索引、查询、选择和注入共用当前问题及最近两个历史用户问题。"""
     current = normalize_question_text(question)
     if not isinstance(context_text, str):
         raise ValueError("context_text 必须是字符串")
-    require_nonnegative_int(max_context_questions, "max_context_quesitons")
-    required = needs_user_context(current)
-    selected: tuple[str, ...] = ()
-
-    def unavailable(reason: str) -> MatchingText:
+    require_nonnegative_int(max_context_questions, "max_context_questions")
+    try:
+        selected = necessary_user_questions(
+            current, context_text, max_questions=max_context_questions, strict=True
+        )
+    except ValueError:
         return MatchingText(
             question=current,
-            context_questions=selected,
-            needs_context=required,
+            context_questions=(),
+            needs_context=False,
             text=None,
             input_sha256=None,
-            reason_code=reason
+            reason_code="invalid_context",
         )
-    
-    if required:
-        try:
-            selected = necessary_user_questions(
-                current, context_text, max_questions=max_context_questions, strict=True
-            )
-        except ValueError:
-            return unavailable("invalid_context")
-        
-        if not selected:
-            return unavailable("missing_context")
-    
-        if needs_user_context(selected[0]):
-            return unavailable("incomplete_context_chain")
-    
+
     if selected:
         text = "\n".join([
-            "必要历史用户问题: ",
+            "历史用户问题: ",
             *selected,
-            "当前用户问题: " + current
+            "当前用户问题: " + current,
         ])
         reason = "with_user_context"
     else:
         text = current
         reason = "question_only"
-        
-    fingerprint = matching_text_sha256(text)
+
     return MatchingText(
         question=current,
         context_questions=selected,
-        needs_context=required,
+        needs_context=bool(selected),
         text=text,
-        input_sha256=fingerprint,
-        reason_code=reason
+        input_sha256=matching_text_sha256(text),
+        reason_code=reason,
     )
+
 
 def build_request_text(request: RetrievalRequest, config: RetrievalConfig) -> MatchingText:
     validate_request(request=request)

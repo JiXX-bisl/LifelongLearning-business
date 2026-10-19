@@ -135,26 +135,7 @@ def main() -> int:
                 encoding="utf-8",
             )
 
-        summary = {
-            key: report[key]
-            for key in (
-                "event_id",
-                "namespace",
-                "data_version",
-                "sync_only",
-                "records_in_scope",
-                "quality",
-                "preparation",
-                "quality_after_processing",
-                "eligible_group_counts",
-                "eligible_difficulty_counts",
-                "group_summaries",
-                "pool_changes",
-                "error_count",
-                "stage_seconds",
-                "usage",
-            )
-        }
+        summary = dict(report)
         summary["report_file"] = (
             str(report_path) if report_path is not None else None
         )

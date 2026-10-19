@@ -1,4 +1,4 @@
-"""规则路由与语义初筛；不调用 LLM，不重建历史索引。"""
+"""全池语义初筛；不调用 LLM，不重建历史索引。"""
 
 from __future__ import annotations
 
@@ -8,9 +8,8 @@ from time import perf_counter
 import numpy as np
 
 from ..models import RetrievalRequest
-from ..pool.classification import classify
-from ..pool.pool_models import GROUP_IDS, ContentKey, GroupingInput
-from ..pool.selection import BasicRankingPolicy, RankingPolicy
+from ..pool.pool_models import GROUP_IDS, ContentKey
+from ..pool.selection import BasicRankingPolicy
 from .embedding_service import EmbeddingService
 from .index_store import (
     SQLiteRetrievalIndex,
@@ -26,7 +25,7 @@ class SemanticPrefilter:
         index: SQLiteRetrievalIndex,
         embeddings: EmbeddingService,
         *,
-        ranking_policy: RankingPolicy | None = None,
+        ranking_policy: BasicRankingPolicy | None = None,
     ) -> None:
         require_index_compatibility(index, embeddings)
         self.index = index
@@ -136,51 +135,15 @@ class SemanticPrefilter:
         if not matching.ready:
             return finish("query_unavailable", matching.reason_code)
 
-        stage = perf_counter()
-        decision = classify(
-            GroupingInput(
-                execution_id=request.task_id,
-                # 路由使用匹配文本指纹，不创建业务内容版本。
-                content_version=matching.input_sha256,
-                question=matching.question,
-                namespace=request.namespace,
-                data_version=request.data_version,
-                context_text=request.context_text,
-                data_advice=request.data_advice,
-            ),
-            max_context_questions=self.config.max_context_questions,
-        )
-        result.stage_seconds["classification_seconds"] = (
-            perf_counter() - stage
-        )
-
         scope = {
             "namespace": request.namespace,
             "data_version": request.data_version,
         }
-        search_group = decision.group_id
-        result.routing = {
-            "decision": decision.to_dict(),
-            "requested_group": decision.group_id,
-            "search_scope": (
-                "same_group" if search_group is not None else "all_groups"
-            ),
-            "fallback_reason": (
-                None if search_group is not None else "unclassified"
-            ),
-        }
+        result.routing = {"search_scope": "all_groups"}
 
         try:
             stage = perf_counter()
-            inspection = self.index.inspect(
-                **scope, group_id=search_group
-            )
-
-            if search_group is not None and inspection["member_count"] == 0:
-                search_group = None
-                result.routing["search_scope"] = "all_groups"
-                result.routing["fallback_reason"] = "group_empty"
-                inspection = self.index.inspect(**scope)
+            inspection = self.index.inspect(**scope)
 
             result.stage_seconds["history_inspection_seconds"] = (
                 perf_counter() - stage
@@ -262,9 +225,7 @@ class SemanticPrefilter:
 
             # 读取新的事务快照，复用原索引和成员校验。
             stage = perf_counter()
-            current = self.index.inspect(
-                **scope, group_id=search_group
-            )
+            current = self.index.inspect(**scope)
             result.stage_seconds["final_inspection_seconds"] = (
                 perf_counter() - stage
             )

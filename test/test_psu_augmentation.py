@@ -75,13 +75,13 @@ class AugmentationTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, text)
 
-        self.assertNotIn("必要历史用户上下文：", text)
+        self.assertNotIn("历史用户上下文：", text)
         self.assertEqual(self.content, before)
         self.assertEqual(report["usage"]["model_call_count"], 0)
         self.assertEqual(report["usage"]["http_request_count"], 0)
         self.assertEqual(report["usage"]["embedding_input_tokens"], 0)
 
-    def test_independent_question_ignores_old_messages(self):
+    def test_independent_question_keeps_explicit_user_history(self):
         content = {
             **self.content,
             "context_text": json.dumps([
@@ -90,7 +90,7 @@ class AugmentationTests(unittest.TestCase):
             ]),
         }
         text, _ = self.render(content)
-        self.assertNotIn("UNRELATED_USER_SENTINEL", text)
+        self.assertIn("UNRELATED_USER_SENTINEL", text)
         self.assertNotIn("OLD_ANSWER_SENTINEL", text)
 
     def test_default_and_request_override(self):
@@ -146,7 +146,7 @@ class AugmentationTests(unittest.TestCase):
         }
         full_text, _ = self.render(content)
         self.assertIn("那北京呢？", full_text)
-        self.assertIn("必要历史用户上下文：", full_text)
+        self.assertIn("历史用户上下文：", full_text)
 
         minimum = self.minimum_size(content)
         text, report = self.render(content, budget=minimum)
@@ -157,7 +157,7 @@ class AugmentationTests(unittest.TestCase):
             {"question", "context_questions"},
         )
         self.assertNotIn("那北京呢？", text)
-        self.assertNotIn("必要历史用户上下文：", text)
+        self.assertNotIn("历史用户上下文：", text)
         self.assertIn(content["sql"], text)
 
     def test_minimum_boundary_and_constraints(self):
@@ -213,27 +213,22 @@ class AugmentationTests(unittest.TestCase):
         self.assertIn("历史 SQL：\n" + sql, text)
         self.assertEqual(report["sql_sha256"], sha256_text(sql))
 
-    def test_missing_or_broken_required_context(self):
-        cases = (
-            ("", "missing_context"),
-            ("not-json", "invalid_context"),
-            (
-                json.dumps([
-                    {"role": "user", "content": "那上海呢？"}
-                ], ensure_ascii=False),
-                "incomplete_context_chain",
-            ),
-        )
-        for context, expected in cases:
-            with self.subTest(expected=expected):
-                content = {
-                    **self.content,
-                    "question": "那北京呢？",
-                    "context_text": context,
-                }
-                text, report = self.render(content)
-                self.assertIsNone(text)
-                self.assertEqual(report["reason_code"], expected)
+    def test_invalid_context_is_rejected(self):
+        content = {**self.content, "question": "那北京呢？", "context_text": "not-json"}
+        text, report = self.render(content)
+        self.assertIsNone(text)
+        self.assertEqual(report["reason_code"], "invalid_context")
+
+    def test_history_without_inferred_anchor_is_rendered(self):
+        for history in ([], [{"role": "user", "content": "那上海呢？"}]):
+            content = {
+                **self.content,
+                "question": "那北京呢？",
+                "context_text": json.dumps(history, ensure_ascii=False),
+            }
+            text, report = self.render(content)
+            self.assertEqual(report["reason_code"], "rendered")
+            self.assertIn("那北京呢？", text)
 
     def test_invalid_content_returns_diagnostics(self):
         cases = (

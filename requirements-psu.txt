@@ -1,0 +1,2 @@
+# SQL AST grouping dependency, matching the existing llm_api environment.
+sqlglot==26.7.0

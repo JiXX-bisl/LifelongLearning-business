@@ -12,7 +12,7 @@ from typing import Literal
 
 from ._common import (
     RECORD_FIELDS, record_fields, require_nonnegative_int, require_text_fields,
-    user_questions,
+    necessary_user_questions,
 )
 from ._common import require_text as require_text
 
@@ -24,7 +24,7 @@ GROUP_LABELS: dict[GroupId, str] = {
     "detail": "明细获取", "aggregate": "统计汇总",
     "compare": "比较变化", "rank": "排序选取",
 }
-GROUP_RULE_VERSION = "action_group_v2"
+GROUP_RULE_VERSION = "sql_action_group_v1"
 DIFFICULTY_PROMPT_VERSION = "difficulty_v1"
 
 
@@ -56,10 +56,11 @@ class GroupingInput:
 
     # 当前问题的建议 后续由Vanna适配器传入
     data_advice: str = ""
+    sql: str = ""
 
     def __post_init__(self) -> None:
         require_text_fields(self, *RECORD_FIELDS, "question")
-        for name in ("context_text", "data_advice"):
+        for name in ("context_text", "data_advice", "sql"):
             if not isinstance(getattr(self, name), str):
                 raise ValueError(f"{name} 必须是字符串")
 
@@ -93,7 +94,7 @@ class GroupingDecision(_Serializable):
     rule_version: str = GROUP_RULE_VERSION
     method: Literal["rule", "manual"] = "rule"
     text_source: Literal[
-        "question", "data_advice", "context", "none"
+        "question", "data_advice", "context", "none", "sql"
     ] = "none"
 
     matches: tuple[RuleMatch, ...] = ()
@@ -102,14 +103,19 @@ class GroupingDecision(_Serializable):
 
 @dataclass(frozen=True)
 class PoolConfig:
-    """每个粗组的总容量"""
+    """adaptive 按动作组限额；FIFO 使用全局容量。"""
     capacities: Mapping[str, int] = field(
         default_factory=lambda: {
             group_id: 8 for group_id in GROUP_IDS
         }
     )
+    strategy: Literal["adaptive", "fifo"] = "adaptive"
+    fifo_capacity: int = 18
 
     def __post_init__(self) -> None:
+        if self.strategy not in ("adaptive", "fifo"):
+            raise ValueError("strategy 必须是 adaptive 或 fifo")
+        require_nonnegative_int(self.fifo_capacity, "fifo_capacity")
         if not isinstance(self.capacities, Mapping):
             raise ValueError("capacities 必须是映射对象")
         if set(self.capacities) != set(GROUP_IDS):
@@ -121,10 +127,15 @@ class PoolConfig:
 
     def capacity_for(self, group_id: GroupId) -> int:
         require_group_id(group_id)
-        return self.capacities[group_id]
+        return self.capacities[group_id] if self.strategy == "adaptive" else self.fifo_capacity
+
+    @property
+    def total_capacity(self) -> int:
+        return sum(self.capacities.values()) if self.strategy == "adaptive" else self.fifo_capacity
 
     def to_dict(self) -> dict:
-        return {"capacities": dict(self.capacities)}
+        return {"strategy": self.strategy, "fifo_capacity": self.fifo_capacity,
+                "capacities": dict(self.capacities)}
 
 
 # 难度评估：保持输入边界，避免将模型回答作为待评估任务。
@@ -166,7 +177,7 @@ class DifficultyInput:
     def from_grouping(cls, request: GroupingInput, *, schema_context: str = "") -> DifficultyInput:
         return cls(
             **record_fields(request), question=request.question,
-            context_questions=user_questions(request.context_text),
+            context_questions=necessary_user_questions(request.question, request.context_text),
             schema_context=schema_context, data_advice=request.data_advice,
         )
 
@@ -354,39 +365,13 @@ class RankedCandidate:
 
 
 @dataclass(frozen=True)
-class Exclusion:
-    key: ContentKey
-    reason_code: str
-    reason: str
-
-
-@dataclass(frozen=True)
 class SelectionPlan(_Serializable):
+    """组内选择结果；仅保留成员差异和容量统计。"""
     scope: PoolScope
     capacity: int
-
-    ranking_policy_version: str
-    selection_policy_version: str
-
-    input_count: int
-    duplicates_collapsed: int
-    selectable_count: int
-
     selected: tuple[ContentKey, ...]
     added: tuple[ContentKey, ...]
     retained: tuple[ContentKey, ...]
-    removed: tuple[Exclusion, ...]
-    excluded: tuple[Exclusion, ...]
-
+    removed: tuple[ContentKey, ...]
+    selectable_count: int
     difficulty_counts: dict[str, int]
-    unfilled_capacity: int
-    rankings: tuple[RankedCandidate, ...]
-    usage: dict
-
-
-    def next_snapshot(self) -> PoolSnapshot:
-        """返回建议的新快照，不执行任何保存操作。"""
-        return PoolSnapshot(
-            scope=self.scope,
-            members=self.selected,
-        )

@@ -10,6 +10,7 @@ import io
 from pathlib import Path
 import shutil
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -66,7 +67,7 @@ class DirectRunnerTests(unittest.TestCase):
         public_path = self.root / "public.json"
         write_json(public_path, {"data_version": "fixture-v1", "messages": self.public})
         self.config = {"policy": POLICY, "namespace": "direct-test", "data_version": "fixture-v1",
-                       "conditions": ["baseline", "fixed", "adaptive"], "initial_state": "empty",
+                       "conditions": ["baseline", "fifo", "adaptive", "fixed"], "initial_state": "empty",
                        "source_store": None, "questions": str(self.questions_path),
                        "ground_truth": str(self.truth_path), "public_context": str(public_path),
                        "business_config": str(self.business_path),
@@ -84,6 +85,7 @@ class DirectRunnerTests(unittest.TestCase):
             (folder / "history.sqlite3").write_bytes(b"opaque mocked store")
         write_json(self.run / "config.json", {
             "policy": POLICY, "run_id": "fixture-run", "namespace": "direct-test",
+            "implementation_version": runner.IMPLEMENTATION_VERSION,
             "data_version": "fixture-v1", "conditions": self.config["conditions"],
             "initial_state": "empty", "cases": self.cases, "standards": self.standards,
             "public_context": self.public, "business_config": str(self.business_path),
@@ -134,10 +136,18 @@ class DirectRunnerTests(unittest.TestCase):
                 runner.prepare(self.config_path, self.run)
         self.assertEqual(result["case_count"], 2)
         self.assertFalse(bootstrap.call_args.kwargs["record_runs"])
+        configurations = {call.args[0].parent.name: call.kwargs["pool_config"]
+                          for call in bootstrap.call_args_list}
+        self.assertEqual(configurations["fifo"].strategy, "fifo")
+        self.assertEqual(configurations["fifo"].fifo_capacity, 18)
+        self.assertEqual(configurations["adaptive"].strategy, "adaptive")
+        self.assertEqual(sum(configurations["adaptive"].capacities.values()), 32)
         saved = read_json(self.run / "config.json")
         self.assertEqual(saved["cases"], self.cases)
         self.assertEqual(saved["standards"], self.standards)
         self.assertEqual(saved["public_context"], self.public)
+        self.assertEqual(saved["implementation_version"], "dev_v0.1")
+        self.assertEqual(saved["pool_configs"]["fifo"]["strategy"], "fifo")
         copies = [(self.run / mode / "history.sqlite3").read_bytes() for mode in self.config["conditions"]]
         self.assertEqual(len(set(copies)), 1)
         self.assertEqual(mark_completed.call_count, len(self.config["conditions"]))
@@ -156,6 +166,58 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(cases, self.cases)
         self.assertEqual(loaded["standards"], self.standards)
         self.assertEqual({path.name: path.read_bytes() for path in (self.run / "inputs").iterdir()}, snapshots)
+
+    def test_snapshot_copies_identical_seeds_before_configuring_each_strategy(self):
+        from src.psu_memory.pool.pool_models import GROUP_RULE_VERSION
+
+        source = self.root / "seed.sqlite3"
+        source.write_bytes(b"same selected seed members and index")
+        write_json(self.config_path, {**self.config, "initial_state": "snapshot",
+                                     "source_store": str(source)})
+        seeds = [
+            {"identity": {"execution_id": key, "content_version": "v1"},
+             "quality": SimpleNamespace(admission_state="eligible"),
+             "grouping": SimpleNamespace(rule_version=GROUP_RULE_VERSION)}
+            for key in ("seed-one", "seed-two")
+        ]
+        initial_pool = Mock()
+        initial_pool.load_active_members.return_value = seeds
+        initial_pool.load_inputs.return_value = seeds
+        condition_pools = {mode: Mock() for mode in self.config["conditions"]}
+
+        def pool_for(path, **_):
+            path = Path(path)
+            return initial_pool if path.name == ".initial.sqlite3" else condition_pools[path.parent.name]
+
+        index = Mock()
+        index.inspect.return_value = {"complete": True, "member_count": 2, "ready_binding_count": 4}
+        with (
+            patch("src.psu_memory.integration.bootstrap.initialize_empty_store") as bootstrap,
+            patch("src.psu_memory.integration.common.copy_database", side_effect=shutil.copyfile) as copier,
+            patch("src.psu_memory.pool.pool_store.SQLitePoolStore", side_effect=pool_for),
+            patch("src.psu_memory.retrieval.vector_cache.SQLiteVectorCache"),
+            patch("src.psu_memory.retrieval.index_store.SQLiteRetrievalIndex", return_value=index),
+            patch.object(runner, "_set_completed"),
+            patch.object(runner, "_make_service", side_effect=AssertionError("prepare must not query")),
+        ):
+            runner.prepare(self.config_path, self.run)
+
+        bootstrap.assert_not_called()
+        self.assertEqual(copier.call_count, 1 + len(self.config["conditions"]))
+        self.assertEqual(Path(copier.call_args_list[0].args[0]), source)
+        initial = self.run / ".initial.sqlite3"
+        for mode, pool in condition_pools.items():
+            target = self.run / mode / "history.sqlite3"
+            self.assertEqual(target.read_bytes(), source.read_bytes())
+            self.assertTrue(any(Path(call.args[0]) == initial and Path(call.args[1]) == target
+                                for call in copier.call_args_list[1:]))
+            pool.configure.assert_called_once()
+            config = pool.configure.call_args.kwargs["config"]
+            self.assertEqual(config.strategy, "fifo" if mode == "fifo" else "adaptive")
+            self.assertEqual(config.total_capacity, 18 if mode == "fifo" else 32)
+            pool.sync.assert_not_called()
+        self.assertFalse(initial.exists())
+        self.assertEqual(source.read_bytes(), b"same selected seed members and index")
 
     def test_missing_standard_and_partial_session_exclusion_fail_before_creating_run(self):
         truth = read_json(self.truth_path)
@@ -182,6 +244,8 @@ class DirectRunnerTests(unittest.TestCase):
         make_updater.assert_not_called()
         service.close.assert_called_once()
         self.assertEqual(histories, [self.public, [*self.public, *self.cases[1]["history"]]])
+        self.assertEqual(service.session_history, self.cases[1]["history"])
+        self.assertNotIn(self.public[0], service.session_history)
         for case in self.cases:
             row = read_json(self.run / "baseline" / "results" / (case["id"] + ".json"))
             self.assertEqual(set(row), {"case_id", "condition", "question", "query_id", "sql", "actual", "expected", "verdict"})
@@ -215,6 +279,30 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertTrue(result["completed"])
         make_retriever.assert_called_once()
         make_updater.assert_not_called()
+
+    def test_fifo_learns_only_from_passed_sql(self):
+        self.prepared_fixture()
+        records = [self.record("actual-q1", 999), self.record("actual-q2", 2)]
+        with self.runtime(records) as runtime:
+            _, retriever, updater, _, make_retriever, _, _ = runtime
+            result = runner.run_condition(self.run, "fifo")
+        self.assertEqual((result["pass"], result["fail"]), (1, 1))
+        make_retriever.assert_called_once()
+        updater.apply.assert_called_once()
+        self.assertEqual(updater.apply.call_args.kwargs["query_id"], "actual-q2")
+        self.assertEqual(updater.apply.call_args.kwargs["record"], records[1])
+        retriever.close.assert_called_once()
+
+    def test_previous_code_version_cannot_start_new_condition_in_old_run(self):
+        self.prepared_fixture()
+        config = read_json(self.run / "config.json")
+        config.pop("implementation_version")
+        write_json(self.run / "config.json", config)
+        with self.runtime([]) as runtime:
+            with self.assertRaisesRegex(ValueError, "其他源码版本"):
+                runner.run_condition(self.run, "baseline")
+            runtime[3].assert_not_called()
+        self.assertFalse((self.run / "baseline" / "results").exists())
 
     def test_safely_rolled_back_update_failure_allows_the_next_case(self):
         from src.psu_memory.integration.direct_update import DirectUpdateError

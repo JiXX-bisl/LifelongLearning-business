@@ -14,6 +14,8 @@ from src.project_paths import resolve_project_path
 from .common import POLICY, load_cases, load_config, load_public_context, read_json, write_json
 from .comparison import compare_results, evaluate_result
 
+IMPLEMENTATION_VERSION = "dev_v0.1"
+
 
 def _validate_inputs(config):
     import yaml
@@ -82,7 +84,7 @@ def prepare(config_path, run_dir):
     import yaml
     from ..integration.bootstrap import initialize_empty_store
     from ..integration.common import copy_database
-    from ..pool.pool_models import PoolConfig
+    from ..pool.pool_models import GROUP_RULE_VERSION, PoolConfig
     from ..pool.pool_store import SQLitePoolStore
     from ..retrieval.index_store import SQLiteRetrievalIndex
     from ..retrieval.retrieval_models import RetrievalConfig
@@ -92,6 +94,13 @@ def prepare(config_path, run_dir):
     cases, standards, business, public = _validate_inputs(config)
     retrieval = RetrievalConfig.from_json(config["retrieval_config"])
     capacities = PoolConfig(**read_json(config["pool_config"]))
+    if capacities.strategy != "adaptive":
+        raise ValueError("pool_config须提供adaptive分组容量；FIFO容量单独由fifo_capacity指定")
+    pool_configs = {
+        mode: (PoolConfig(strategy="fifo", fifo_capacity=config["fifo_capacity"])
+               if mode == "fifo" else capacities)
+        for mode in config["conditions"]
+    }
     run = resolve_project_path(run_dir)
     if run.exists():
         raise FileExistsError("实验目录已存在；请使用全新运行目录")
@@ -100,7 +109,7 @@ def prepare(config_path, run_dir):
         if source and Path(source).is_relative_to(run):
             raise ValueError("运行目录不得包含输入文件")
     run.mkdir(parents=True)
-    # 这些是查询的公共运行输入，不是逐题日志；两组使用同一份副本。
+    # 各组共享相同问题和公共运行输入，分别保存功能性工作库。
     inputs = run / "inputs"
     inputs.mkdir()
     baseline = Path(business["data"]["baseline_dir"])
@@ -118,31 +127,52 @@ def prepare(config_path, run_dir):
     shutil.copyfile(config["pool_config"], run / "pool.json")
     initial = run / ".initial.sqlite3"
     try:
-        if config["initial_state"] == "empty":
-            initialize_empty_store(initial, namespace=config["namespace"], data_version=config["data_version"],
-                                   retrieval_config=retrieval, pool_config=capacities, record_runs=False)
-        else:
+        if config["initial_state"] == "snapshot":
             copy_database(config["source_store"], initial)
             pool = SQLitePoolStore(initial, record_runs=False)
+            pool.initialize()
             index = SQLiteRetrievalIndex(SQLiteVectorCache(pool), retrieval)
             inspection = index.inspect(namespace=config["namespace"], data_version=config["data_version"])
-            with pool.connection() as connection:
-                existing = pool._read_config(connection, config["namespace"], config["data_version"])
             if (not inspection["complete"] or not inspection["member_count"]
-                    or not inspection["ready_binding_count"] or existing != capacities):
-                raise ValueError("种子池须有有效成员、完整索引，并使用相同容量配置")
+                    or not inspection["ready_binding_count"]):
+                raise ValueError("种子池须有有效成员及当前版本的完整索引")
+            seeds = pool.load_active_members(namespace=config["namespace"], data_version=config["data_version"])
+            seed_keys = {(entry["identity"]["execution_id"], entry["identity"]["content_version"])
+                         for entry in seeds}
+            eligible_keys = {(entry["identity"]["execution_id"], entry["identity"]["content_version"])
+                             for entry in pool.load_inputs(namespace=config["namespace"], data_version=config["data_version"])
+                             if entry["quality"].admission_state == "eligible"}
+            if seed_keys != eligible_keys:
+                raise ValueError("共同种子库须只包含选定的有效经验，不能夹带池外eligible候选")
+            if any(entry["grouping"].rule_version != GROUP_RULE_VERSION for entry in seeds):
+                raise ValueError("种子经验须先按当前SQL规则归组")
+            if "fifo" in config["conditions"] and len(seeds) > config["fifo_capacity"]:
+                raise ValueError("共同种子数超过FIFO容量；请先准备两组都能完整容纳的同一份种子")
         for mode in config["conditions"]:
             folder = run / mode
             folder.mkdir()
-            copy_database(initial, folder / "history.sqlite3")
-            _set_completed(folder / "history.sqlite3", False)
+            store = folder / "history.sqlite3"
+            if config["initial_state"] == "empty":
+                initialize_empty_store(store, namespace=config["namespace"], data_version=config["data_version"],
+                                       retrieval_config=retrieval, pool_config=pool_configs[mode], record_runs=False)
+            else:
+                copy_database(initial, store)
+                # 仅改变保留策略，保留完全相同的种子成员、内容及现有向量。
+                SQLitePoolStore(store, record_runs=False).configure(
+                    namespace=config["namespace"], data_version=config["data_version"],
+                    config=pool_configs[mode],
+                )
+            _set_completed(store, False)
     finally:
         initial.unlink(missing_ok=True)
     prepared = {"policy": POLICY, "run_id": "direct-" + uuid4().hex[:16],
+                "implementation_version": IMPLEMENTATION_VERSION,
                 "namespace": config["namespace"], "data_version": config["data_version"],
                 "conditions": config["conditions"], "initial_state": config["initial_state"],
                 "business_config": str(run / "business.yaml"), "retrieval_config": str(run / "retrieval.json"),
-                "pool_config": str(run / "pool.json"), "public_context": public,
+                "pool_config": str(run / "pool.json"),
+                "pool_configs": {mode: value.to_dict() for mode, value in pool_configs.items()},
+                "public_context": public,
                 "cases": cases, "standards": standards}
     write_json(run / "config.json", prepared)
     return {"run_dir": str(run), "conditions": config["conditions"], "case_count": len(cases)}
@@ -193,8 +223,10 @@ def _make_service(config, mode, retriever):
 
 def _make_updater(config, service, retriever):
     from ..integration.direct_update import DirectExperienceUpdater
+    from ..pool.pool_models import PoolConfig
+    pool_config = PoolConfig(**config["pool_configs"][service.condition])
     return DirectExperienceUpdater(retriever, namespace=config["namespace"], data_version=config["data_version"],
-                                   model_config=config["business_config"], pool_config=config["pool_config"],
+                                   model_config=config["business_config"], pool_config=pool_config,
                                    schema_context="\n\n".join(service.schemas.values()))
 
 
@@ -214,6 +246,8 @@ def run_condition(run_dir, mode):
             from .reporting import summarize
             return summarize(run)["conditions"][mode]
         raise ValueError("本组曾启动但未完整结束；请使用新目录和原始种子重跑")
+    if config.get("implementation_version") != IMPLEMENTATION_VERSION:
+        raise ValueError("运行目录由其他源码版本准备；请用dev_v0.1创建新目录")
     folder.mkdir()
     _set_completed(store, False)
     retriever = service = updater = None
@@ -227,6 +261,7 @@ def run_condition(run_dir, mode):
                 service.reset()
             service._turn_index = case["turn"] - 1
             service._history = ChatHistory.model_validate({"messages": [*config["public_context"], *case["history"]]})
+            service.session_history = deepcopy(case["history"])
             service.case_id = case["id"]
             print(f"[{mode} {position}/{len(cases)}] {case['question']}", flush=True)
             try:
@@ -245,7 +280,7 @@ def run_condition(run_dir, mode):
                 json.dump(row, stream, ensure_ascii=False, indent=2, allow_nan=False)
                 stream.write("\n")
             print("  " + result["verdict"], flush=True)
-            if mode == "adaptive" and result["verdict"] == "pass":
+            if mode in ("fifo", "adaptive") and result["verdict"] == "pass":
                 if updater is None:
                     updater = _make_updater(config, service, retriever)
                 try:

@@ -1,8 +1,10 @@
 {
-    "capacities": {
-      "detail": 8,
-      "aggregate": 8,
-      "compare": 8,
-      "rank": 8
-    }
+  "strategy": "adaptive",
+  "fifo_capacity": 18,
+  "capacities": {
+    "detail": 8,
+    "aggregate": 8,
+    "compare": 8,
+    "rank": 8
   }
+}

@@ -12,10 +12,10 @@ from ..evaluation.evaluation_evidence import attach_sql_result_pass
 from ..evaluation.quality_store import SQLiteQualityStore
 from ..history.history_adapter import history_from_query_result
 from ..history.history_store import SQLiteHistoryStore
-from ..pool.classification import classify
 from ..pool.difficulty import DifficultyAssessor
 from ..pool.difficulty_llm import LocalDifficultyClient
-from ..pool.pool_models import DifficultyInput, GroupingInput, PoolConfig
+from ..pool.maintenance import run_pool_maintenance
+from ..pool.pool_models import PoolConfig
 from ..pool.pool_store import SQLitePoolStore
 from ..retrieval.indexing import OfflineIndexBuilder
 
@@ -32,6 +32,8 @@ def _functional_rows(connection, execution_id):
     """仅供本次内存回滚核对，不落盘。"""
     return (
         connection.execute("SELECT * FROM psu_pool_members ORDER BY namespace, data_version, execution_id").fetchall(),
+        connection.execute("SELECT * FROM psu_pool_scopes ORDER BY namespace, data_version").fetchall(),
+        connection.execute("SELECT * FROM psu_pool_fifo_seen ORDER BY namespace, data_version, execution_id, content_version").fetchall(),
         connection.execute("SELECT * FROM psu_retrieval_index_members ORDER BY index_key").fetchall(),
         connection.execute("SELECT * FROM history_records WHERE execution_id=?", (execution_id,)).fetchall(),
     )
@@ -114,23 +116,15 @@ class DirectExperienceUpdater:
         )
         if evaluated["decisions"][0]["admission_state"] != "eligible":
             raise ValueError("通过的 SQL 未获得成功经验准入")
-        entry = next(item for item in self.pool.load_inputs(
-            namespace=self.namespace, data_version=self.data_version)
-            if item["identity"]["execution_id"] == execution_id)
-        content = entry["quality"].content
-        request = GroupingInput(**entry["identity"], question=content["question"],
-                                context_text=content.get("context_text") or "")
-        previous = entry["grouping"]
-        grouping = previous if previous is not None and previous.method == "manual" else classify(request)
         if self._difficulty_client is None:
             self._difficulty_client = LocalDifficultyClient.from_yaml(self.model_config)
-        difficulty = DifficultyAssessor(self._difficulty_client, cache=self.pool).assess(
-            DifficultyInput.from_grouping(request, schema_context=self.schema_context), admission_state="eligible",
+        run_pool_maintenance(
+            quality_store=self.quality, pool_store=self.pool,
+            namespace=self.namespace, data_version=self.data_version,
+            assessor=DifficultyAssessor(self._difficulty_client, cache=self.pool),
+            config=self.config, schema_context=self.schema_context,
+            execution_ids=(execution_id,), strict=True, refresh_quality=False,
         )
-        if difficulty.assessment.status == "failed":
-            raise ValueError("本题经验的难度标注失败")
-        self.pool.save_annotation(entry, grouping=grouping, difficulty=difficulty)
-        self.pool.sync(namespace=self.namespace, data_version=self.data_version, config=self.config)
         index = OfflineIndexBuilder(self.retriever.index, self.retriever.prefilter.embeddings).build(
             namespace=self.namespace, data_version=self.data_version,
         )

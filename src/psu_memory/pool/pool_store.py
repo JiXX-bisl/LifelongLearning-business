@@ -26,12 +26,12 @@ from .pool_models import (
     PoolSnapshot,
     RuleMatch,
 )
-from .selection import candidate_from_evaluations, plan_group_update
+from .selection import candidate_from_evaluations, has_sql_result_pass, plan_group_update, select_fifo_members
 
 from ._common import canonical_json, require_text, sha256_text
 
 
-POOL_SCHEMA_VERSION = 2
+POOL_SCHEMA_VERSION = 3
 _COMPONENT = "psu_memory_pool"
 
 
@@ -137,6 +137,16 @@ _SCHEMA += (
     """,
 )
 
+_SCHEMA += ("""
+    CREATE TABLE IF NOT EXISTS psu_pool_fifo_seen (
+        namespace TEXT NOT NULL,
+        data_version TEXT NOT NULL,
+        execution_id TEXT NOT NULL,
+        content_version TEXT NOT NULL,
+        PRIMARY KEY (namespace, data_version, execution_id, content_version)
+    )
+""",)
+
 _CACHE_QUERY = """
     SELECT v.assessment_json
     FROM psu_pool_difficulty_current AS current
@@ -187,16 +197,17 @@ def _decode_grouping(text: str) -> GroupingDecision:
     return GroupingDecision(**payload)
 
 def _pool_event(connection, report: dict, *, record_runs: bool = True) -> dict:
+    if not record_runs:
+        return report
     result = {
         **report,
         "event_id": uuid4().hex,
         "created_at": _now()
     }
-    if record_runs:
-        connection.execute(
-            "INSERT INTO psu_pool_events(event_id, event_json) VALUES (?, ?)",
-            (result["event_id"], canonical_json(result)),
-        )
+    connection.execute(
+        "INSERT INTO psu_pool_events(event_id, event_json) VALUES (?, ?)",
+        (result["event_id"], canonical_json(result)),
+    )
     return result
 
 def invalidate_pool_members(
@@ -378,7 +389,7 @@ class SQLitePoolStore:
 
             if (
                 registered is not None
-                and registered[0] not in (1, POOL_SCHEMA_VERSION)
+                and registered[0] not in (1, 2, POOL_SCHEMA_VERSION)
             ):
                 raise ValueError(
                     f"不支持的经验池存储版本: {registered[0]}"
@@ -494,14 +505,16 @@ class SQLitePoolStore:
             })
         return result
     
-    def load_inputs(self, *, namespace: str, data_version: str) -> list[dict]:
+    def load_inputs(self, *, namespace: str, data_version: str,
+                    execution_id: str | None = None) -> list[dict]:
         require_text(namespace, "namespace")
         require_text(data_version, "data_version")
         with self._connection() as connection:
             return self._read_inputs(
                 connection, 
                 namespace=namespace,
-                data_version=data_version
+                data_version=data_version,
+                execution_id=execution_id,
             )
         
     @staticmethod
@@ -547,7 +560,7 @@ class SQLitePoolStore:
             if (
                 current["identity"] != identity
                 or current["quality_sha256"] != source["quality_sha256"]
-                or current["quality"].admission_state != "eligible"
+                or not has_sql_result_pass(current["quality"])
             ):
                 raise RuntimeError("内容版本、评价或准入状态已变化，请重新读取")
             
@@ -579,14 +592,6 @@ class SQLitePoolStore:
                 != source["annotation_sha256"]
             ):
                 raise RuntimeError("标注已被其他操作更新，请重新读取")
-            
-            previous_grouping = current["grouping"]
-            if (
-                previous_grouping is not None
-                and previous_grouping.method == "manual"
-                and grouping.method != "manual"
-            ):
-                raise RuntimeError("已有人工分类，不能被普通规则结果覆盖")
             
             connection.execute(
                 """
@@ -623,14 +628,28 @@ class SQLitePoolStore:
                 ),
             )
 
-            # 标注变化后先移除旧成员，随后由 sync() 重新选择。
-            removed = invalidate_pool_members(
-                connection,
-                identity["execution_id"],
-                keep_version=None,
-                reason="annotation_changed",
-                record_runs=self.record_runs,
+            config = self._read_config(connection, identity["namespace"], identity["data_version"])
+            candidate = candidate_from_evaluations(
+                current["quality"], grouping, difficulty,
+                namespace=identity["namespace"], data_version=identity["data_version"],
             )
+            previous_group = current["grouping"].group_id if current["grouping"] is not None else None
+            preserve_member = (candidate.group_id is not None and candidate.difficulty is not None
+                               and (config.strategy == "fifo" or previous_group == candidate.group_id))
+            if preserve_member:
+                # 同一内容的有效重标注保留队列位置/原成员身份，已淘汰候选不会复活。
+                connection.execute(
+                    """UPDATE psu_pool_members SET group_id=?, annotation_sha256=?
+                       WHERE namespace=? AND data_version=? AND execution_id=? AND content_version=?""",
+                    (candidate.group_id, annotation_sha, identity["namespace"], identity["data_version"],
+                     identity["execution_id"], identity["content_version"]),
+                )
+                removed = 0
+            else:
+                removed = invalidate_pool_members(
+                    connection, identity["execution_id"], keep_version=None,
+                    reason="annotation_changed", record_runs=self.record_runs,
+                )
             return {
                 "changed": True,
                 "annotation_sha256": annotation_sha,
@@ -752,6 +771,9 @@ class SQLitePoolStore:
                 if active_count >= capacity:
                     break
 
+        if config.strategy == "fifo":
+            result.sort(key=lambda entry: (entry["position"], entry["identity"]["execution_id"]))
+            return result[:config.fifo_capacity]
         return result
 
     def load_active_members(
@@ -789,158 +811,145 @@ class SQLitePoolStore:
                 ),
             )
         
-    def sync(
-        self,
-        *,
-        namespace: str,
-        data_version: str,
-        config: PoolConfig | None = None,
-        ranking_policy=None,
-        selection_policy=None,
-    ) -> dict:
-        """在同一事务中读取最新状态、计算选择计划并保存成员。"""
+    @staticmethod
+    def _write_config(connection, namespace, data_version, config):
+        connection.execute(
+            """INSERT INTO psu_pool_scopes(namespace, data_version, config_json)
+               VALUES (?, ?, ?) ON CONFLICT(namespace, data_version)
+               DO UPDATE SET config_json=excluded.config_json
+               WHERE config_json<>excluded.config_json""",
+            (namespace, data_version, canonical_json(config.to_dict())),
+        )
+
+    def configure(self, *, namespace: str, data_version: str, config: PoolConfig) -> None:
+        """设置新运行的策略，保留当前活跃种子；不从历史候选重选。"""
+        require_text(namespace, "namespace")
+        require_text(data_version, "data_version")
+        if not isinstance(config, PoolConfig):
+            raise TypeError("config 必须是 PoolConfig")
+        with self._connection(write=True) as connection:
+            active = self._read_active_members(connection, namespace=namespace, data_version=data_version)
+            rows = connection.execute(
+                """SELECT execution_id, content_version, group_id FROM psu_pool_members
+                   WHERE namespace=? AND data_version=?
+                   ORDER BY joined_at, position, execution_id""", (namespace, data_version),
+            ).fetchall()
+            active_keys = {entry["candidate"].key for entry in active}
+            if {ContentKey(row[0], row[1]) for row in rows} != active_keys:
+                raise ValueError("种子含无效成员，不能直接切换经验池策略")
+            counts = {group: sum(row[2] == group for row in rows) for group in GROUP_IDS}
+            if len(rows) > config.total_capacity or (
+                config.strategy == "adaptive" and any(counts[group] > config.capacity_for(group) for group in GROUP_IDS)
+            ):
+                raise ValueError("当前种子成员超过目标策略容量")
+            if config.strategy == "fifo":
+                old = self._read_config(connection, namespace, data_version)
+                if old.strategy == "fifo":
+                    rows = connection.execute(
+                        """SELECT execution_id, content_version, group_id FROM psu_pool_members
+                           WHERE namespace=? AND data_version=? ORDER BY position, execution_id""",
+                        (namespace, data_version),
+                    ).fetchall()
+                for position, (execution_id, version, _) in enumerate(rows):
+                    connection.execute(
+                        """UPDATE psu_pool_members SET position=?
+                           WHERE namespace=? AND data_version=? AND execution_id=?""",
+                        (position, namespace, data_version, execution_id),
+                    )
+                    connection.execute(
+                        "INSERT OR IGNORE INTO psu_pool_fifo_seen VALUES (?, ?, ?, ?)",
+                        (namespace, data_version, execution_id, version),
+                    )
+            self._write_config(connection, namespace, data_version, config)
+
+    def sync(self, *, namespace: str, data_version: str, config: PoolConfig | None = None,
+             execution_ids: tuple[str, ...] | None = None) -> dict:
+        """原子选择和保存。FIFO 只接受明确提交的新候选，adaptive 重选全部当前候选。"""
         started = perf_counter()
         require_text(namespace, "namespace")
         require_text(data_version, "data_version")
         if config is not None and not isinstance(config, PoolConfig):
             raise TypeError("config 必须是 PoolConfig")
-
+        if execution_ids is not None:
+            if len(set(execution_ids)) != len(execution_ids):
+                raise ValueError("execution_ids 不能重复")
+            for execution_id in execution_ids:
+                require_text(execution_id, "execution_id")
         with self._connection(write=True) as connection:
-            effective_config = (
-                config if config is not None
-                else self._read_config(connection, namespace, data_version)
-            )
-            entries = self._read_inputs(
-                connection,
-                namespace=namespace,
-                data_version=data_version,
-            )
-            candidates = tuple(self._candidate(item) for item in entries)
-            by_key = {
-                candidate.key: entry
-                for candidate, entry in zip(candidates, entries)
-            }
-            heads = dict(connection.execute(
-                """
-                SELECT head.execution_id, head.content_version
-                FROM quality_heads AS head
-                JOIN history_records AS h
-                  ON h.execution_id=head.execution_id
-                WHERE h.namespace=? AND h.data_version=?
-                """,
+            previous_config = self._read_config(connection, namespace, data_version)
+            effective = config or previous_config
+            configured = connection.execute(
+                "SELECT 1 FROM psu_pool_scopes WHERE namespace=? AND data_version=?",
                 (namespace, data_version),
-            ).fetchall())
-
-            plans = []
-            for group_id in GROUP_IDS:
-                scope = PoolScope(namespace, data_version, group_id)
-                snapshot = PoolSnapshot(
-                    scope=scope,
-                    members=tuple(
-                        ContentKey(execution_id, version)
-                        for execution_id, version, _ in self._member_rows(
-                            connection, scope
-                        )
-                    ),
+            ).fetchone()
+            if configured and effective.strategy != previous_config.strategy:
+                raise ValueError("切换策略请先调用 configure；sync 不隐式重设种子")
+            entries = self._read_inputs(connection, namespace=namespace, data_version=data_version)
+            candidates = tuple(self._candidate(entry) for entry in entries)
+            by_key = {candidate.key: entry for candidate, entry in zip(candidates, entries)}
+            heads = {entry["identity"]["execution_id"]: entry["identity"]["content_version"] for entry in entries}
+            rows = connection.execute(
+                """SELECT group_id, execution_id, content_version, annotation_sha256, position
+                   FROM psu_pool_members WHERE namespace=? AND data_version=?
+                   ORDER BY position, execution_id""", (namespace, data_version),
+            ).fetchall()
+            before = {ContentKey(row[1], row[2]): (row[0], row[3]) for row in rows}
+            if effective.strategy == "fifo":
+                seen = {ContentKey(*row) for row in connection.execute(
+                    "SELECT execution_id, content_version FROM psu_pool_fifo_seen WHERE namespace=? AND data_version=?",
+                    (namespace, data_version),
+                ).fetchall()}
+                submitted = tuple(ContentKey(key, heads[key]) for key in (execution_ids or ()) if key in heads)
+                new_keys = tuple(key for key in submitted if key not in seen)
+                selected = select_fifo_members(
+                    incumbents=tuple(before), candidates=candidates, new_keys=new_keys,
+                    current_versions=heads, namespace=namespace, data_version=data_version,
+                    capacity=effective.fifo_capacity,
                 )
-                plans.append(plan_group_update(
-                    snapshot=snapshot,
-                    candidates=candidates,
-                    current_versions=heads,
-                    capacity=effective_config.capacity_for(group_id),
-                    ranking_policy=ranking_policy,
-                    selection_policy=selection_policy,
-                ))
+                # 只有当前已可入队的候选才标记见过；失败标注之后可显式重试。
+                eligible_keys = {candidate.key for candidate in candidates
+                                 if candidate.admission_state == "eligible" and candidate.group_id is not None
+                                 and candidate.difficulty is not None}
+                for key in (*tuple(before), *new_keys):
+                    if key in eligible_keys:
+                        connection.execute("INSERT OR IGNORE INTO psu_pool_fifo_seen VALUES (?, ?, ?, ?)",
+                                           (namespace, data_version, key.execution_id, key.content_version))
+                positions = {key: index for index, key in enumerate(selected)}
+            else:
+                plans = [plan_group_update(
+                    snapshot=PoolSnapshot(PoolScope(namespace, data_version, group),
+                                          tuple(key for key, value in before.items() if value[0] == group)),
+                    candidates=candidates, current_versions=heads, capacity=effective.capacity_for(group),
+                ) for group in GROUP_IDS]
+                selected = tuple(key for plan in plans for key in plan.selected)
+                positions = {key: index for plan in plans for index, key in enumerate(plan.selected)}
+            after = {key: (by_key[key]["grouping"].group_id, by_key[key]["annotation_sha256"]) for key in selected}
+            for key in before.keys() - after.keys():
+                connection.execute(
+                    "DELETE FROM psu_pool_members WHERE namespace=? AND data_version=? AND execution_id=?",
+                    (namespace, data_version, key.execution_id),
+                )
+            for key, (group, annotation_sha) in after.items():
+                connection.execute(
+                    """INSERT INTO psu_pool_members(namespace, data_version, group_id,
+                        execution_id, content_version, annotation_sha256, position, joined_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(namespace, data_version, execution_id) DO UPDATE SET
+                        group_id=excluded.group_id, content_version=excluded.content_version,
+                        annotation_sha256=excluded.annotation_sha256, position=excluded.position
+                        WHERE group_id<>excluded.group_id OR content_version<>excluded.content_version
+                           OR annotation_sha256<>excluded.annotation_sha256 OR position<>excluded.position""",
+                    (namespace, data_version, group, key.execution_id, key.content_version,
+                     annotation_sha, positions[key], _now()),
+                )
+            self._write_config(connection, namespace, data_version, effective)
+            report = {"operation": "sync", "namespace": namespace, "data_version": data_version,
+                      "config": effective.to_dict(), "changed": before != after,
+                      "selected_count": len(after), "added_count": len(after.keys() - before.keys()),
+                      "removed_count": len(before.keys() - after.keys()),
+                      "retained_count": len(before.keys() & after.keys()), "usage": _local_usage(started)}
+            return _pool_event(connection, report, record_runs=self.record_runs)
 
-            # 先处理所有组的移除，再处理新增，支持组间移动。
-            for plan in plans:
-                for exclusion in plan.removed:
-                    connection.execute(
-                        """
-                        DELETE FROM psu_pool_members
-                        WHERE namespace=? AND data_version=? AND group_id=?
-                          AND execution_id=? AND content_version=?
-                        """,
-                        (
-                            namespace,
-                            data_version,
-                            plan.scope.group_id,
-                            exclusion.key.execution_id,
-                            exclusion.key.content_version,
-                        ),
-                    )
-
-            for plan in plans:
-                for position, key in enumerate(plan.selected):
-                    entry = by_key[key]
-                    connection.execute(
-                        """
-                        INSERT INTO psu_pool_members (
-                            namespace, data_version, group_id,
-                            execution_id, content_version,
-                            annotation_sha256, position, joined_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(namespace, data_version, execution_id)
-                        DO UPDATE SET
-                            group_id=excluded.group_id,
-                            content_version=excluded.content_version,
-                            annotation_sha256=excluded.annotation_sha256,
-                            position=excluded.position
-                        WHERE group_id<>excluded.group_id
-                           OR content_version<>excluded.content_version
-                           OR annotation_sha256<>excluded.annotation_sha256
-                           OR position<>excluded.position
-                        """,
-                        (
-                            namespace,
-                            data_version,
-                            plan.scope.group_id,
-                            key.execution_id,
-                            key.content_version,
-                            entry["annotation_sha256"],
-                            position,
-                            _now(),
-                        ),
-                    )
-
-            connection.execute(
-                """
-                INSERT INTO psu_pool_scopes(
-                    namespace, data_version, config_json
-                ) VALUES (?, ?, ?)
-                ON CONFLICT(namespace, data_version)
-                DO UPDATE SET config_json=excluded.config_json
-                WHERE config_json<>excluded.config_json
-                """,
-                (
-                    namespace,
-                    data_version,
-                    canonical_json(effective_config.to_dict()),
-                ),
-            )
-
-            report = _pool_event(connection, {
-                "operation": "sync",
-                "namespace": namespace,
-                "data_version": data_version,
-                "config": effective_config.to_dict(),
-                "input_versions": [
-                    {
-                        **item["identity"],
-                        "quality_sha256": item["quality_sha256"],
-                        "annotation_sha256": item["annotation_sha256"],
-                    }
-                    for item in entries
-                ],
-                "plans": [plan.to_dict() for plan in plans],
-                "added_count": sum(len(plan.added) for plan in plans),
-                "removed_count": sum(len(plan.removed) for plan in plans),
-                "retained_count": sum(len(plan.retained) for plan in plans),
-                "usage": _local_usage(started),
-            }, record_runs=self.record_runs)
-
-        return report
-    
     def get(self, key: str) -> DifficultyAssessment | None:
         require_text(key, "cache_key")
         with self._connection() as connection:
@@ -1011,6 +1020,8 @@ class SQLitePoolStore:
         }
     
     def save_run_report(self, report: dict) -> dict:
+        if not self.record_runs:
+            return report
         with self._connection(write=True) as connection:
             return _pool_event(connection=connection, report=report, record_runs=self.record_runs)
         

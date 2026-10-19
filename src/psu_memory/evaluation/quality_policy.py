@@ -187,4 +187,10 @@ def evaluate_candidate(record, profile, content, *, source, evidence_version=Non
         feedback_event_ids=[e["event_id"] for e in events],
         execution_verified=bool(not corrected and operation.get("success") is True
                                 and operation.get("is_complete") is True),
+        direct_sql_result_verified=bool(not corrected and reference_ok and any(
+            review.get("admission_policy") == "sql_result_direct_v1"
+            and _verified_sql_result_review(review, operation, record)
+            for item in profile.get("evidence", [])
+            for review in [item.get("details", {}).get("independent_review", {})]
+        )),
     )

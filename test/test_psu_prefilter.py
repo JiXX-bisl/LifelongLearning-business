@@ -43,7 +43,7 @@ class ControlledEncoder(FakeEncoder):
         for text, original in zip(texts, fallback):
             values = (
                 (0.0, 1.0, 0.0, 0.0, 0.0)
-                if text.startswith("必要历史用户问题")
+                if text.startswith("历史用户问题")
                 else mapping.get(text)
             )
             if values is None:
@@ -107,13 +107,12 @@ class PrefilterTests(unittest.TestCase):
             **kwargs,
         )
 
-    def test_same_group_top3_and_query_cache(self):
+    def test_full_pool_top3_and_query_cache(self):
         first = self.service.prefilter(self.request())
         self.assertEqual(first.status, "ok")
-        self.assertEqual(first.routing["search_scope"], "same_group")
-        self.assertEqual(first.routing["requested_group"], "detail")
+        self.assertEqual(first.routing["search_scope"], "all_groups")
         self.assertEqual(len(first.candidates), 3)
-        self.assertEqual(first.diagnostics["scored_member_count"], 3)
+        self.assertEqual(first.diagnostics["scored_member_count"], 4)
 
         scores = [item["similarity"] for item in first.candidates]
         for actual, expected in zip(scores, (1.0, 0.8, 0.6)):
@@ -130,20 +129,23 @@ class PrefilterTests(unittest.TestCase):
         )
         self.assertTrue(first.to_dict()["candidates"][0]["content"]["sql"])
 
-    def test_unknown_and_empty_group_fallback(self):
-        unknown = self.service.prefilter(
-            self.request("请帮我处理这件事。")
-        )
-        empty_group = self.service.prefilter(
-            self.request("查询排名前3的企业。")
-        )
+    def test_question_wording_never_gates_action_groups(self):
+        for question in ("请帮我处理这件事。", "查询排名前3的企业。"):
+            with self.subTest(question=question):
+                result = self.service.prefilter(self.request(question))
+                self.assertEqual(result.status, "ok")
+                self.assertEqual(result.routing["search_scope"], "all_groups")
+                self.assertEqual(result.diagnostics["scored_member_count"], 4)
+                self.assertEqual(result.routing["searched_groups"], ["detail", "aggregate"])
 
-        self.assertEqual(unknown.status, "ok")
-        self.assertEqual(unknown.routing["fallback_reason"], "unclassified")
-        self.assertEqual(empty_group.status, "ok")
-        self.assertEqual(empty_group.routing["requested_group"], "rank")
-        self.assertEqual(empty_group.routing["fallback_reason"], "group_empty")
-        self.assertEqual(unknown.diagnostics["scored_member_count"], 4)
+    def test_aggregate_candidate_can_be_selected_across_full_pool(self):
+        result = self.service.prefilter(self.request("统计正常营业的企业数量。"))
+        self.assertEqual(result.status, "ok")
+        self.assertEqual(result.diagnostics["scored_member_count"], 4)
+        self.assertEqual(result.candidates[0]["member"]["candidate"].execution_id,
+                         self.members.aggregate_key)
+        self.assertTrue(any(item["member"]["candidate"].group_id == "detail"
+                            for item in result.candidates))
 
     def test_no_members_and_disabled(self):
         before = self.encoder.calls
@@ -173,7 +175,7 @@ class PrefilterTests(unittest.TestCase):
         self.assertEqual(self.encoder.calls, calls)
         self.assertEqual(self.cache.info()["vector_count"], vectors)
         self.assertEqual(self.index.info()["stored_binding_count"], 8)
-        self.assertEqual(result.routing["search_scope"], "same_group")
+        self.assertEqual(result.routing["search_scope"], "all_groups")
 
     def test_corrupted_history_does_not_repair_online(self):
         inspection = self.index.inspect(
@@ -233,7 +235,6 @@ class PrefilterTests(unittest.TestCase):
     def test_invalid_context_and_overlong_question(self):
         calls = self.encoder.calls
         for context_text, reason in (
-            ("", "missing_context"),
             ("not-json", "invalid_context"),
         ):
             result = self.service.prefilter(self.request(
@@ -298,7 +299,7 @@ class PrefilterTests(unittest.TestCase):
             result = self.service.prefilter(self.request())
 
         self.assertEqual(result.status, "ok")
-        self.assertEqual(len(result.candidates), 2)
+        self.assertEqual(len(result.candidates), 3)
         self.assertEqual(result.diagnostics["filtered_member_count"], 1)
         self.assertNotIn(
             key,
@@ -451,7 +452,7 @@ class PrefilterTests(unittest.TestCase):
             )
         ))
 
-    def test_data_advice_affects_route_only(self):
+    def test_data_advice_does_not_restrict_full_pool(self):
         ordinary = self.service.prefilter(self.request())
         advised = self.service.prefilter(self.request(
             data_advice="统计符合条件的企业数量。"
@@ -459,11 +460,10 @@ class PrefilterTests(unittest.TestCase):
 
         self.assertEqual(ordinary.status, "ok")
         self.assertEqual(advised.status, "ok")
+        self.assertEqual(ordinary.routing, advised.routing)
         self.assertEqual(
-            ordinary.routing["requested_group"], "detail"
-        )
-        self.assertEqual(
-            advised.routing["requested_group"], "aggregate"
+            [item["binding"]["index_key"] for item in ordinary.candidates],
+            [item["binding"]["index_key"] for item in advised.candidates],
         )
         self.assertEqual(
             ordinary.query["cache_key"],

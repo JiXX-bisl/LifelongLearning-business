@@ -116,11 +116,12 @@ def acceptance_cases():
             "prefilter_reason": "limit_zero",
         },
         {
-            "id": "missing_context",
+            "id": "invalid_context",
+            "context_text": "not-json",
             "question": "那北京呢？",
             "expect": "zero",
             "prefilter_status": "query_unavailable",
-            "prefilter_reason": "missing_context",
+            "prefilter_reason": "invalid_context",
         },
         {
             "id": "namespace_isolation",
@@ -432,7 +433,7 @@ def run_real(args, output_dir, regression):
                 outcome_match = (
                     selection.reason_code == "selected"
                     and selected["member"]["candidate"].key in allowed_keys
-                    and prefilter.routing["requested_group"] == case["group"]
+                    and prefilter.routing["search_scope"] == "all_groups"
                 )
             elif case["expect"] == "reject":
                 outcome_match = (
@@ -452,7 +453,7 @@ def run_real(args, output_dir, regression):
 
             # 前四个零调用案例应当连模型客户端和编码模型都未创建。
             if case["id"] in {
-                "disabled", "missing_context",
+                "disabled", "invalid_context",
                 "namespace_isolation", "version_isolation",
             }:
                 checks["services_not_loaded"] = (

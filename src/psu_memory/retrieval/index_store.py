@@ -23,9 +23,7 @@ REPRESENTATIONS = ("default", "question_only")
 _COMPONENT = "psu_memory_retrieval_index"
 
 EXCLUDED_REASONS = frozenset({
-    "missing_context",
     "invalid_context",
-    "incomplete_context_chain",
     "question_too_long",
 })
 

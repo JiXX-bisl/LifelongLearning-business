@@ -41,11 +41,33 @@ class OfflineIndexBuilder:
         stages = {}
 
         stage = perf_counter()
-        members = self.index.pool_store.load_active_members(
+        inspection = self.index.inspect(
             namespace=namespace,
             data_version=data_version,
         )
-        stages["member_read_seconds"] = perf_counter() - stage
+        members = inspection["members"]
+        stages["initial_inspection_seconds"] = perf_counter() - stage
+        if inspection["complete"]:
+            # inspect 已校验当前成员、内容版本、文本规则和缓存完整性。
+            # 成员减少时，已有剩余关联同样可直接使用，无需再发布索引。
+            return self._report(
+                namespace=namespace,
+                data_version=data_version,
+                members=members,
+                inspection=inspection,
+                status="ok",
+                publication={
+                    "published": False,
+                    "reason": "index_unchanged",
+                    "inserted_count": 0,
+                    "updated_count": 0,
+                    "unchanged_count": inspection["expected_binding_count"],
+                },
+                batches=[],
+                errors=[],
+                stages=stages,
+                started=started,
+            )
 
         stage = perf_counter()
         texts = [
@@ -164,6 +186,33 @@ class OfflineIndexBuilder:
         else:
             status = "ok"
 
+        return self._report(
+            namespace=namespace,
+            data_version=data_version,
+            members=members,
+            inspection=inspection,
+            status=status,
+            publication=publication,
+            batches=batches,
+            errors=errors,
+            stages=stages,
+            started=started,
+        )
+
+    def _report(
+        self,
+        *,
+        namespace,
+        data_version,
+        members,
+        inspection,
+        status,
+        publication,
+        batches,
+        errors,
+        stages,
+        started,
+    ) -> dict:
         # 聚合现有 EmbeddingUsage，不引入第二套成本结构。
         usage = asdict(EmbeddingUsage(
             elapsed_seconds=0.0,

@@ -52,7 +52,7 @@ def _sections(
 
     if context_questions:
         sections.append(
-            "必要历史用户上下文：\n"
+            "历史用户上下文：\n"
             + "\n".join(context_questions)
         )
 
@@ -151,7 +151,7 @@ def render_experience(
         applicability = _optional_text(content, "applicability")
         context_text = _optional_text(content, "context_text")
 
-        # 复用原上下文依赖判断，不建立第二套规则。
+        # 索引、查询、选择与注入共用同一显式会话规则。
         matching = build_matching_text(
             content.get("question"),
             context_text,
@@ -211,7 +211,7 @@ def render_experience(
     seen_texts = set()
 
     for level, question, context_questions in plans:
-        # 必要上下文被移除时，依赖它的问题必须一起省略。
+        # 历史上下文被移除时，一并省略问题，避免改变会话含义。
         if question is None:
             level = "sql_only"
 

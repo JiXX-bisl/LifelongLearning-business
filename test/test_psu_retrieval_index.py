@@ -59,9 +59,19 @@ class RetrievalIndexTests(unittest.TestCase):
         before = member_fixtures.database_snapshot(
             self.fixture.db
         )["psu_retrieval_index_members"]
-        repeat = self.build()
+        with (
+            patch.object(self.embeddings, "encode_many", side_effect=AssertionError(
+                "unchanged index must skip encoding"
+            )),
+            patch.object(self.index, "publish", side_effect=AssertionError(
+                "unchanged index must skip publication"
+            )),
+        ):
+            repeat = self.build()
 
         self.assertEqual(repeat["status"], "ok")
+        self.assertEqual(repeat["publication"]["reason"], "index_unchanged")
+        self.assertFalse(repeat["publication"]["published"])
         self.assertEqual(repeat["usage"]["encoded_text_count"], 0)
         self.assertEqual(repeat["usage"]["embedding_input_tokens"], 0)
         self.assertEqual(repeat["publication"]["inserted_count"], 0)
@@ -169,15 +179,15 @@ class RetrievalIndexTests(unittest.TestCase):
         self.assertEqual(report["status"], "ok")
         self.assertTrue(report["index_complete"])
         self.assertEqual(report["member_count"], 6)
-        self.assertEqual(report["ready_binding_count"], 8)
-        self.assertEqual(report["excluded_binding_count"], 4)
+        self.assertEqual(report["ready_binding_count"], 10)
+        self.assertEqual(report["excluded_binding_count"], 2)
         self.assertEqual(report["error_count"], 0)
 
         reasons = {
             item["reason"] for item in report["bindings"]
             if item["status"] == "excluded"
         }
-        self.assertEqual(reasons, {"missing_context", "question_too_long"})
+        self.assertEqual(reasons, {"question_too_long"})
 
     def test_member_change_blocks_stale_publication(self):
         member = self.pool.load_active_members(

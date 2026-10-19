@@ -174,6 +174,62 @@ class DirectUpdateTests(unittest.TestCase):
         self.assertEqual(database_rows(self.database), before)
         self.assertTrue(self.index.inspect(namespace="unit", data_version="v1")["complete"])
 
+    def test_sql_group_is_independent_of_question_keywords(self):
+        case, record, path, query_id = self.record(question="看看目前的情况")
+        record["operations"][0]["sql"] = "SELECT COUNT(*) AS total FROM enterprise_basic"
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        saved["sql"] = record["operations"][0]["sql"]
+        path.write_text(json.dumps(saved, ensure_ascii=False), encoding="utf-8")
+        self.updater.apply(case, record, path, query_id)
+        members = self.pool.load_active_members(namespace="unit", data_version="v1")
+        self.assertEqual(members[0]["candidate"].group_id, "aggregate")
+
+    def test_fifo_evicts_oldest_and_replayed_pass_does_not_reenter(self):
+        config = PoolConfig(strategy="fifo", fifo_capacity=1)
+        self.pool.configure(namespace="unit", data_version="v1", config=config)
+        self.updater.config = config
+        first = self.record("old", "短问题")
+        second = self.record("new", "较长的问题不应因预览长度较长而在FIFO被淘汰")
+        self.updater.apply(*first)
+        self.updater.apply(*second)
+        self.updater.apply(*first)
+        members = self.pool.load_active_members(namespace="unit", data_version="v1")
+        self.assertEqual(len(members), 1)
+        self.assertEqual(members[0]["quality"].content["question"], second[0]["question"])
+
+    def test_fifo_failed_publication_restores_queue_seen_and_all_functional_rows(self):
+        config = PoolConfig(strategy="fifo", fifo_capacity=1)
+        self.pool.configure(namespace="unit", data_version="v1", config=config)
+        self.updater.config = config
+        first = self.record("fifo-old", "原有经验")
+        second = self.record("fifo-new", "新提交的经验")
+        self.updater.apply(*first)
+        before = database_rows(self.database)
+        self.assertEqual(len(before["psu_pool_fifo_seen"]), 1)
+        original_build = OfflineIndexBuilder.build
+
+        def publish_then_fail(builder, **scope):
+            report = original_build(builder, **scope)
+            members = self.pool.load_active_members(namespace="unit", data_version="v1")
+            self.assertEqual([entry["quality"].content["question"] for entry in members],
+                             [second[0]["question"]])
+            self.assertEqual(len(database_rows(self.database)["psu_pool_fifo_seen"]), 2)
+            self.assertTrue(report["index_complete"])
+            raise RuntimeError("模拟FIFO淘汰并发布索引后的失败")
+
+        with patch.object(OfflineIndexBuilder, "build", new=publish_then_fail):
+            with self.assertRaises(DirectUpdateError):
+                self.updater.apply(*second)
+        self.assertEqual(database_rows(self.database), before)
+        self.assertTrue(self.index.inspect(namespace="unit", data_version="v1")["complete"])
+
+        # 回滚还原seen标记后，同一新经验可以正常重新提交，而非被误当作已消费。
+        self.assertEqual(self.updater.apply(*second), {"admitted": True})
+        members = self.pool.load_active_members(namespace="unit", data_version="v1")
+        self.assertEqual([entry["quality"].content["question"] for entry in members],
+                         [second[0]["question"]])
+        self.assertEqual(len(database_rows(self.database)["psu_pool_fifo_seen"]), 2)
+
     def test_failed_recovery_verification_requires_stopping_condition(self):
         with patch.object(OfflineIndexBuilder, "build", side_effect=RuntimeError("模拟更新失败")):
             with patch.object(self.index, "inspect", side_effect=RuntimeError("模拟恢复复核失败")):

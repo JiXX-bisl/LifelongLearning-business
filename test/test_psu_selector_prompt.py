@@ -156,6 +156,26 @@ class SelectorPromptTests(unittest.TestCase):
             [prefilter_fixtures.BASE * 200],
         )
 
+    def test_explicit_recent_user_history_reaches_selector(self):
+        request = self.fixture.request(
+            "先只看4、5月吧",
+            context_text=json.dumps([
+                {"role": "user", "content": "更早的问句"},
+                {"role": "user", "content": "查看锐序公司2025年经营情况"},
+                {"role": "assistant", "content": "旧回答不进入选择输入"},
+                {"role": "user", "content": "营业收入给我"},
+            ], ensure_ascii=False),
+        )
+        result = self.fixture.service.prefilter(request)
+        prepared = prepare_selector_prompt(request, result, self.config)
+        self.assertTrue(prepared.ready)
+        payload = json.loads(prepared.user_text)
+        self.assertEqual(payload["current"]["context_questions"], [
+            "查看锐序公司2025年经营情况", "营业收入给我",
+        ])
+        self.assertNotIn("旧回答不进入选择输入", prepared.user_text)
+        self.assertNotIn("更早的问句", prepared.user_text)
+
     def test_unavailable_prefilter_and_empty_candidates(self):
         unavailable = replace(
             self.prefilter,

@@ -16,6 +16,7 @@ from src.psu_memory.history.history_adapter import read_history_file
 from src.psu_memory.history.history_store import SQLiteHistoryStore
 from src.psu_memory.evaluation.quality_models import Feedback, QualityDecision
 from src.psu_memory.evaluation.quality_store import SQLiteQualityStore
+from src.psu_memory.evaluation.evaluation_evidence import attach_sql_result_pass
 from src.psu_memory.pool._common import canonical_json, sha256_text
 from src.psu_memory.pool.classification import classify, apply_group_override
 from src.psu_memory.pool.pool_models import (
@@ -166,6 +167,7 @@ class ActiveMemberTests(unittest.TestCase):
             started_at=perf_counter(),
         )
 
+        attach_sql_result_pass(self.db, record, f"query-{self.sequence}")
         report = self.quality.assess_batch(
             namespace=namespace,
             data_version=data_version,
@@ -186,6 +188,7 @@ class ActiveMemberTests(unittest.TestCase):
             actor="unit-test",
         ))["decision"]
         self.assertEqual(accepted["admission_state"], "eligible")
+        self.assertTrue(accepted["direct_sql_result_verified"])
 
         if annotate:
             self._annotate(
@@ -216,6 +219,7 @@ class ActiveMemberTests(unittest.TestCase):
             **source["identity"],
             question=content["question"],
             context_text=content.get("context_text", ""),
+            sql=content["sql"],
         ))
 
         # 明确的测试标注，不模拟一次真实模型调用。
@@ -415,21 +419,11 @@ class ActiveMemberTests(unittest.TestCase):
             {item["candidate"].execution_id for item in self._members()},
         )
 
-        self._annotate(key)
+        # 人工确认的修正版没有对应的实际 SQL PASS，不能进入当前实验池。
+        with self.assertRaises(RuntimeError):
+            self._annotate(key)
         self.pool.sync(namespace="unit", data_version="v1")
-        current = next(
-            item for item in self._members()
-            if item["candidate"].execution_id == key
-        )
-        self.assertEqual(
-            current["candidate"].content_version,
-            corrected["content_version"],
-        )
-        self.assertNotEqual(
-            current["candidate"].content_version,
-            old["candidate"].content_version,
-        )
-        self.assertEqual(current["quality"].content["sql"], corrected_sql)
+        self.assertNotIn(key, {item["candidate"].execution_id for item in self._members()})
 
     def test_stale_annotation_is_excluded(self):
         key = self.detail_keys[0]

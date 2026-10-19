@@ -47,7 +47,7 @@ def sha256_text(text: str) -> str:
 
 
 def user_questions(context_text: str, *, strict: bool = True) -> tuple[str, ...]:
-    """难度评估严格校验；分类跳过坏消息，并保留原始空白用于命中证据。"""
+    """解析调用方显式提供的会话消息，只读取用户问题。"""
     if not isinstance(context_text, str):
         if strict:
             raise ValueError("context_text 必须是字符串")
@@ -80,37 +80,7 @@ def user_questions(context_text: str, *, strict: bool = True) -> tuple[str, ...]
             questions.append(content.strip() if strict else content)
     return tuple(questions)
 
-MATCH_TEXT_RULE_VERSION = "question_context_v1"
-
-_CONTEXT_EXPLICIT = re.compile(
-    r"(?:同样|相同|一样)(?:的)?(?:条件|方法|方式|要求)"
-    r"|照着?(?:刚才|上次)"
-    r"|沿用(?:刚才|上次|上述)"
-    r"|继续(?:刚才|上次|上述)"
-    r"|同上"
-)
-
-_CONTEXT_REFERENCE_START = re.compile(
-    r"^(?:请帮我|帮我|麻烦|请)?\s*"
-    r"(?:(?:再|继续|那就|那么)\s*)?"
-    r"(?:(?:查询|查看|看看|看一下|我想看|想看|统计|比较|对比"
-    r"|列出|列一下|给出|计算|汇总|筛选|找出|把|将|对于|对)\s*)*"
-    r"(?:(?:这些|那些|这几|那几|这家|那家|上述|该)"
-    r"(?:的|家)?(?:企业|公司|条件|结果|记录|数据|地区|月份)"
-    r"|它们|他们)"
-)
-
-_CONTEXT_CHANGE_START = re.compile(
-    r"^(?:那就)?(?:换成|改成|换为|改为"
-    r"|再看|再查|继续查|继续看"
-    r"|只看|仅看|只保留|仅保留)"
-)
-
-_CONTEXT_FRAGMENT = re.compile(
-    r"^(?:那(?:么|就)?[^。！？?\n]{0,40}"
-    r"|去年同期|去年|今年|前年|本月|上月|上个月|\d{4}年)"
-    r"(?:的)?(?:呢|怎么样|如何)[？?。！!]*$"
-)
+MATCH_TEXT_RULE_VERSION = "question_context_v2"
 
 
 def normalize_question_text(text: str) -> str:
@@ -123,20 +93,6 @@ def normalize_question_text(text: str) -> str:
     ).strip()
 
 
-def needs_user_context(question: str) -> bool:
-    """规则识别明确的追问、外部指代和条件调整。"""
-    text = normalize_question_text(question)
-    return any(
-        pattern.search(text)
-        for pattern in (
-            _CONTEXT_EXPLICIT,
-            _CONTEXT_REFERENCE_START,
-            _CONTEXT_CHANGE_START,
-            _CONTEXT_FRAGMENT,
-        )
-    )
-
-
 def necessary_user_questions(
     question: str,
     context_text: str,
@@ -144,30 +100,14 @@ def necessary_user_questions(
     max_questions: int = 2,
     strict: bool = True,
 ) -> tuple[str, ...]:
-    """从最近用户问题回溯，遇到独立问题或达到上限即停止。"""
+    """取显式会话中最近最多两个用户问题，不推断追问或独立问句。"""
     require_nonnegative_int(max_questions, "max_questions")
-    current = normalize_question_text(question)
-
-    if max_questions == 0 or not needs_user_context(current):
-        return ()
-
-    # 复用已有消息解析，不改变 difficulty 使用的 user_questions()。
+    require_text(question, "question")
     questions = [
         normalize_question_text(item)
         for item in user_questions(context_text, strict=strict)
     ]
 
-    # 调用方误将当前问题放在消息末尾时，避免重复加入。
-    while questions and questions[-1] == current:
-        questions.pop()
-
-    selected = []
-    for previous in reversed(questions):
-        selected.append(previous)
-        if (
-            not needs_user_context(previous)
-            or len(selected) >= max_questions
-        ):
-            break
-
-    return tuple(reversed(selected))
+    # 宿主提供当前轮之前的会话；相同文字也可能是再次提问，不能按文字删去。
+    limit = min(max_questions, 2)
+    return tuple(questions[-limit:]) if limit else ()

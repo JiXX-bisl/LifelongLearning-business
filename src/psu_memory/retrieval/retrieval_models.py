@@ -79,6 +79,8 @@ class RetrievalConfig:
                 raise ValueError(f"{name} 必须大于零")
         
         require_nonnegative_int(self.max_context_questions, "max_context_questions")
+        if self.max_context_questions > 2:
+            raise ValueError("max_context_questions 最多为 2")
         require_nonnegative_int(self.selector_max_retries, "selector_max_retries")
 
         if self.selector_max_retries != 0:

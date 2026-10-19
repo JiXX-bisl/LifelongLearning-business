@@ -7,7 +7,7 @@ from pathlib import Path
 from src.project_paths import resolve_project_path
 from ..integration.common import read_json, write_json
 
-MODES = ("baseline", "fixed", "adaptive")
+MODES = ("baseline", "fifo", "adaptive", "fixed")
 POLICY = "sql_result_direct_v1"
 DEFAULT_CONFIG = "configs/validation/enterprise_v30_120_v1_0_2_natural_direct_v1.json"
 
@@ -66,12 +66,15 @@ def load_config(path=DEFAULT_CONFIG):
     if value.get("policy") != POLICY:
         raise ValueError("仅支持sql_result_direct_v1，请使用新的直接比较配置")
     config = deepcopy(value)
-    conditions = config.get("conditions", ["baseline", "adaptive"])
+    conditions = config.get("conditions", ["baseline", "fifo", "adaptive"])
     if (not isinstance(conditions, list) or not conditions
             or len(set(conditions)) != len(conditions)
             or any(mode not in MODES for mode in conditions)):
-        raise ValueError("conditions仅支持不重复的baseline/fixed/adaptive")
+        raise ValueError("conditions仅支持不重复的baseline/fifo/adaptive；fixed保留旧版只检索语义")
     config["conditions"] = conditions
+    fifo_capacity = config.setdefault("fifo_capacity", 18)
+    if type(fifo_capacity) is not int or fifo_capacity < 1:
+        raise ValueError("fifo_capacity必须是正整数")
     for key in ("namespace", "data_version"):
         if not isinstance(config.get(key), str) or not config[key].strip():
             raise ValueError(key + "不能为空")

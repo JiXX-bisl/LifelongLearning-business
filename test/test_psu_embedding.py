@@ -172,7 +172,7 @@ class EmbeddingTests(unittest.TestCase):
         self.assertTrue(second.items[0].cache_hit)
         self.assertEqual(item.cache_key, second.items[0].cache_key)
 
-    def test_token_boundary_and_missing_context(self):
+    def test_token_boundary_and_empty_context(self):
         accepted = self.encode([build_matching_text("企" * 1022)])
         rejected = self.encode([build_matching_text("企" * 1023)])
         missing = self.encode([build_matching_text("那北京呢？")])
@@ -184,10 +184,10 @@ class EmbeddingTests(unittest.TestCase):
             "question_too_long",
         )
         self.assertEqual(rejected.usage.embedding_batch_count, 0)
-        self.assertFalse(missing.items[0].ready)
+        self.assertTrue(missing.items[0].ready)
         self.assertEqual(
             missing.items[0].prepared.matching.reason_code,
-            "missing_context",
+            "question_only",
         )
 
     def test_corrupted_cache_is_repaired(self):

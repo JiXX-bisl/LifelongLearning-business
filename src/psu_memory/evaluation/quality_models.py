@@ -73,6 +73,8 @@ class QualityDecision:
     policy_version: str = POLICY_VERSION
     feedback_event_ids: list[str] = field(default_factory=list)
     execution_verified: bool = False
+    # 当前直接比较的准入证据，区别于历史 LLM 审核或 legacy 参考命中。
+    direct_sql_result_verified: bool = False
 
     def to_dict(self):
         result = asdict(self)

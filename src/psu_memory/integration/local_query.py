@@ -75,6 +75,8 @@ class LocalValidationQueryService(QueryService):
         self.retriever = retriever
         self.case_id = None
         self.run_id = None
+        # 由验证宿主提供本会话先前问题，公开业务背景只进入查询提示词。
+        self.session_history = []
         super().__init__(config_path, mode="standard", experiment_id=experiment_id)
         if self.config["data"]["baseline_id"] != data_version:
             self.close()
@@ -92,8 +94,7 @@ class LocalValidationQueryService(QueryService):
         request = RetrievalRequest(
             task_id=task_id, question=question, namespace=self.namespace,
             data_version=self.data_version,
-            context_text=json.dumps(conversation_context.model_dump(mode="json")["messages"],
-                                    ensure_ascii=False),
+            context_text=json.dumps(self.session_history, ensure_ascii=False),
         )
         return _PromptStrategy(strategy, self.retriever, request)
 
