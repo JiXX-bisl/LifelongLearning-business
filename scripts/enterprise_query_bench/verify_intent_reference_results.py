@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import fcntl
 import hashlib
 import json
 import os
@@ -15,6 +14,12 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.file_lock import lock_exclusive_nonblocking
+
+
 DATA_VERSION = "synthetic_enterprise_v30_120_v1.0.2"
 DATABASE = "synthetic_enterprise_v30_120"
 DATASET_MANIFEST = ROOT / "data/sql" / DATA_VERSION / "manifest.json"
@@ -341,7 +346,7 @@ def main():
     # 锁文件保留在原位，避免删除后其他进程对不同 inode 加锁。
     with (bank.private / ".reference_validation.lock").open("a+b") as lock:
         try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_exclusive_nonblocking(lock)
         except BlockingIOError:
             print(json.dumps({"verdict": "fail", "reason": "verification_already_running",
                               "approved": False, "report_written": False}, ensure_ascii=False))

@@ -5,7 +5,6 @@ query_adapter.py 与 CLI 的输入、提示词交付和最终输出接线由用�
 """
 from __future__ import annotations
 
-import fcntl
 import importlib
 import os
 from copy import deepcopy
@@ -13,6 +12,7 @@ from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
+from src.file_lock import lock_exclusive_nonblocking
 from src.project_paths import PROJECT_ROOT, resolve_project_path
 from ..pool._common import require_nonnegative_int, require_text
 from .common import (
@@ -393,7 +393,7 @@ def create_query_runtime(config_path=DEFAULT_CONFIG, *, psu_enabled=None,
             store.parent.mkdir(parents=True, exist_ok=True)
             lease = store.with_name(store.name + ".lock").open("a", encoding="utf-8")
             try:
-                fcntl.flock(lease.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                lock_exclusive_nonblocking(lease)
             except BlockingIOError:
                 raise RuntimeError("该工作库已有运行进程，请使用独立工作库或等待其关闭") from None
             from ..retrieval.retrieval_models import RetrievalConfig

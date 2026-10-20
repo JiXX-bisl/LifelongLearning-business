@@ -27,6 +27,7 @@
 !/scripts/**/
 !/scripts/**/*.py
 !/scripts/**/*.sh
+!/scripts/**/*.ps1
 !/scripts/**/*.sql
 
 !/test/

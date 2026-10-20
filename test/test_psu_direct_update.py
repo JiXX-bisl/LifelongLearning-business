@@ -5,6 +5,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from copy import deepcopy
 from dataclasses import asdict
 from pathlib import Path
@@ -57,7 +58,7 @@ class FakeEncoder:
 
 
 def database_rows(path):
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         tables = [row[0] for row in connection.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
         return {table: sorted(connection.execute('SELECT * FROM "' + table + '"').fetchall(), key=repr)

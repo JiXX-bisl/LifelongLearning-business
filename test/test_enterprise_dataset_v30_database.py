@@ -35,6 +35,12 @@ SHOW_EXPRESSIONS = {
     (MONTHLY, DATES): "((dayofmonth(`stat_month`) = 1))",
 }
 
+# Observed in SHOW CREATE TABLE on native Windows MySQL 8.0.16.
+MYSQL_8016_COUNTS_EXPRESSION = (
+    "((isnull(`employee_count`) or (`employee_count` >= 0)) and "
+    "(isnull(`social_security_count`) or (`social_security_count` >= 0)))"
+)
+
 
 def make_statement(table, expressions):
     constraints = [
@@ -103,10 +109,23 @@ def mock_check_sources(monkeypatch, *, metadata=None, statements=None):
             "((`is_current` is null) or (`is_current` in (0,1)))",
             ["or", [["is_null", ["identifier", "is_current"]], ["in", ["identifier", "is_current"], [["number", "0"], ["number", "1"]]]]],
         ),
+        (
+            "ISNULL((`employee_count`))",
+            ["is_null", ["identifier", "employee_count"]],
+        ),
     ],
 )
 def test_check_normalization_preserves_expected_semantics(expression, canonical):
     assert json.loads(database._normalize_check(expression)) == canonical
+
+
+@pytest.mark.parametrize(
+    "expression",
+    ["isnull()", "isnull(`employee_count`, 0)", "isnull(`employee_count`"],
+)
+def test_check_normalization_rejects_malformed_isnull(expression):
+    with pytest.raises(ValueError):
+        database._normalize_check(expression)
 
 
 def test_check_definitions_extract_all_nested_and_chinese_checks():
@@ -126,6 +145,13 @@ def test_check_contract_uses_show_create_instead_of_corrupt_metadata(monkeypatch
     assert show_tables == {PROFILE, MONTHLY}
 
 
+def test_check_contract_accepts_mysql_8016_isnull_rendering(monkeypatch):
+    expressions = {**SHOW_EXPRESSIONS, (MONTHLY, COUNTS): MYSQL_8016_COUNTS_EXPRESSION}
+    statements = {table: make_statement(table, expressions) for table in (PROFILE, MONTHLY)}
+    connection, _ = mock_check_sources(monkeypatch, statements=statements)
+    database._check_contract(connection, {PROFILE, MONTHLY}, expected_checks())
+
+
 @pytest.mark.parametrize(
     ("identity", "changed_expression"),
     [
@@ -137,8 +163,27 @@ def test_check_contract_uses_show_create_instead_of_corrupt_metadata(monkeypatch
             "(`employee_count` IS NULL) OR ((`employee_count` >= 0) AND "
             "(`social_security_count` IS NULL OR `social_security_count` >= 0))",
         ),
+        (
+            (MONTHLY, COUNTS),
+            MYSQL_8016_COUNTS_EXPRESSION.replace(
+                "isnull(`employee_count`)", "isnull(`social_security_count`)"
+            ),
+        ),
+        (
+            (MONTHLY, COUNTS),
+            MYSQL_8016_COUNTS_EXPRESSION.replace(" and ", " or "),
+        ),
+        (
+            (MONTHLY, COUNTS),
+            MYSQL_8016_COUNTS_EXPRESSION.replace(
+                "isnull(`employee_count`)", "isnull(isnull(`employee_count`))"
+            ),
+        ),
     ],
-    ids=["changed-literal", "removed-literal", "changed-operator", "changed-grouping"],
+    ids=[
+        "changed-literal", "removed-literal", "changed-operator", "changed-grouping",
+        "isnull-wrong-column", "isnull-changed-grouping", "isnull-nested",
+    ],
 )
 def test_check_contract_rejects_semantic_changes(monkeypatch, identity, changed_expression):
     expressions = {**SHOW_EXPRESSIONS, identity: changed_expression}

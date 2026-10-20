@@ -1,0 +1,21 @@
+{
+  "policy": "sql_result_direct_v1",
+  "comparison_version": "explicit_columns_aux_v2",
+  "data_version": "synthetic_enterprise_v30_120_v1.0.2",
+  "namespace": "validation-v30-120-v1.0.2-natural-v0.3.0-split-v1",
+  "questions": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/questions.json",
+  "ground_truth": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/ground_truth.json",
+  "public_context": "configs/validation/enterprise_v30_120_v1_0_2_public_context_minimal_v1.json",
+  "split_file": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/split_v1.json",
+  "case_partition": "test",
+  "business_config": "configs/business/query_v30_120.yaml",
+  "retrieval_config": "src/psu_memory/retrieval/retrieval_config.windows_cuda.json",
+  "pool_config": "src/psu_memory/pool/pool_config.example.json",
+  "conditions": ["baseline", "fifo", "adaptive"],
+  "fifo_capacity": 18,
+  "initial_state": "snapshot",
+  "source_store": "data/derived/psu_memory/seeds/windows-cuda/seed.sqlite3",
+  "acceptance_report": "data/reports/enterprise_v30_120/database_acceptance_windows.json",
+  "require_dataset_acceptance": true,
+  "exclude_case_ids": ["A2-L1-02", "A2-L3-02"]
+}

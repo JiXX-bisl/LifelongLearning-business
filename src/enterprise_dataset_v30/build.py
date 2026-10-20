@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import fcntl
 import json
 import shutil
 import sys
@@ -11,6 +10,8 @@ import traceback
 from collections import Counter
 from copy import deepcopy
 from pathlib import Path
+
+from src.file_lock import lock_exclusive_nonblocking
 
 from .common import (ROOT, TARGET_CATEGORIES, digest, file_hash, json_bytes,
                      load_config, read_json, resolve, rng, write_json)
@@ -346,7 +347,7 @@ def generate(config_path=DEFAULT_CONFIG):
         lock_path = private_dir.parent / ("." + config["baseline_id"] + ".publish.lock")
         with lock_path.open("a") as lock:
             try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                lock_exclusive_nonblocking(lock)
             except BlockingIOError as error:
                 raise ValueError("同一基线正在发布，请使用相同配置稍后重试") from error
             for staging, destination in ((temp_public, public), (temp_private, private_dir)):

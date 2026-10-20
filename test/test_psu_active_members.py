@@ -7,6 +7,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from time import perf_counter
 from unittest.mock import patch
@@ -38,9 +39,9 @@ def database_snapshot(path: Path) -> dict:
     """用于测试及验收命令；同时检查表结构和内容，支持向量 BLOB。"""
 
     result = {}
-    with sqlite3.connect(
+    with closing(sqlite3.connect(
         path.as_uri() + "?mode=ro", uri=True
-    ) as connection:
+    )) as connection, connection:
         result["user_version"] = connection.execute(
             "PRAGMA user_version"
         ).fetchone()[0]
@@ -494,7 +495,7 @@ class ActiveMemberTests(unittest.TestCase):
 
     def test_one_transaction_snapshot(self):
         # WAL 允许另一个连接在读取期间提交反馈。
-        with sqlite3.connect(self.db) as connection:
+        with closing(sqlite3.connect(self.db)) as connection, connection:
             connection.execute("PRAGMA journal_mode=WAL")
 
         key = self.detail_keys[0]

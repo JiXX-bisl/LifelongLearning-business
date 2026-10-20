@@ -349,6 +349,7 @@ class DirectRunnerTests(unittest.TestCase):
                     runner.prepare(self.config_path, run)
                 self.assertFalse(run.exists())
 
+    @unittest.skipUnless(os.name == "posix" and shutil.which("bash"), "POSIX Bash entry point")
     def test_shell_rejects_existing_run_without_launching_python(self):
         self.run.mkdir()
         previous = b'{"case_count":70,"initial_state":"empty"}\n'

@@ -173,10 +173,13 @@ def _normalize_check(value: str) -> str:
             return ("number", str(Decimal(token).normalize()))
         _require(re.fullmatch(r"[a-z_][a-z0-9_]*", token) is not None, "unsupported schema CHECK operand")
         if cursor < len(tokens) and tokens[cursor] == "(":
-            _require(token in {"day", "dayofmonth", "year", "month"}, "unsupported schema CHECK function")
+            _require(token in {"day", "dayofmonth", "year", "month", "isnull"}, "unsupported schema CHECK function")
             take("(")
             argument = logical_or()
             take(")")
+            # MySQL 8.0.16 renders IS NULL as ISNULL() in SHOW CREATE TABLE.
+            if token == "isnull":
+                return ("is_null", argument)
             return ("function", "day" if token == "dayofmonth" else token, argument)
         return ("identifier", token)
 

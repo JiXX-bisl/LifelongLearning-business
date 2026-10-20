@@ -107,6 +107,12 @@ class LocalBgeM3Encoder:
                 and not torch.backends.mps.is_available()
             ):
                 raise EmbeddingUnavailable("mps_unavailable")
+            if self.config.device.startswith("cuda:"):
+                if not torch.cuda.is_available():
+                    raise EmbeddingUnavailable("cuda_unavailable")
+                device_index = int(self.config.device.split(":")[1])
+                if device_index >= torch.cuda.device_count():
+                    raise EmbeddingUnavailable("cuda_device_out_of_range")
 
         except EmbeddingUnavailable:
             raise
@@ -134,6 +140,8 @@ class LocalBgeM3Encoder:
 
             if self.config.device == "mps":
                 torch.mps.synchronize()
+            elif self.config.device.startswith("cuda:"):
+                torch.cuda.synchronize(self.config.device)
 
             self._torch = torch
             self._model = model
@@ -215,6 +223,8 @@ class LocalBgeM3Encoder:
 
                 if self.config.device == "mps":
                     torch.mps.synchronize()
+                elif self.config.device.startswith("cuda:"):
+                    torch.cuda.synchronize(self.config.device)
 
                 return [
                     validate_dense_vector(

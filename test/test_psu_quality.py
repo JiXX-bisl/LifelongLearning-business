@@ -6,6 +6,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from dataclasses import asdict
 from pathlib import Path
 from time import perf_counter
@@ -62,7 +63,7 @@ class QualityTests(unittest.TestCase):
         return attach_evaluations(self.db, self.root, namespace="test", data_version="v1", resolve_path=Path)
 
     def _profile(self):
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             return json.loads(c.execute("SELECT v.profile_json FROM evaluation_versions v "
                 "JOIN evaluation_current e USING(execution_id,profile_sha256)").fetchone()[0])
 
@@ -73,7 +74,7 @@ class QualityTests(unittest.TestCase):
         return self._batch()["decisions"][0]
 
     def _state(self):
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             return json.loads(c.execute("SELECT v.decision_json FROM quality_versions v JOIN quality_current q "
                 "USING(execution_id,content_version,decision_sha256)").fetchone()[0])
 
@@ -213,7 +214,7 @@ class QualityTests(unittest.TestCase):
         replay = self.store.submit_feedback(corrected)
         self.assertTrue(replay["replayed"])
         self.assertEqual(self.store.submit_feedback(negative)["decision"]["admission_state"], "eligible")
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             old = json.loads(c.execute("SELECT decision_json FROM quality_versions WHERE content_version=? "
                 "ORDER BY created_at DESC LIMIT 1", (original["content_version"],)).fetchone()[0])
             self.assertEqual(old["admission_state"], "suspended")
@@ -248,7 +249,7 @@ class QualityTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 self.store.submit_feedback(Feedback(self.key, original["content_version"], "problem"))
         self.assertEqual(self._state()["admission_state"], "eligible")
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             self.assertEqual(c.execute("SELECT count(*) FROM quality_feedback").fetchone()[0], 0)
 
     def test_legacy_feedback_history_is_sticky(self):
@@ -257,20 +258,20 @@ class QualityTests(unittest.TestCase):
         path.write_text(json.dumps(feedback));self._attach()
         feedback["rating"] = "helpful";path.write_text(json.dumps(feedback));self._attach()
         self.assertEqual(self._decision()["admission_state"], "suspended")
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             count = c.execute("SELECT count(*) FROM quality_feedback").fetchone()[0]
         self._batch()
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             self.assertEqual(c.execute("SELECT count(*) FROM quality_feedback").fetchone()[0], count)
 
     def test_import_compatibility_and_original_tables_unchanged(self):
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             before = c.execute("SELECT * FROM history_records").fetchall()
             evidence_before = c.execute("SELECT * FROM evaluation_versions").fetchall()
         current = self._decision()
         self.store.submit_feedback(Feedback(self.key, current["content_version"], "problem"))
         self.assertEqual(self._import(self.record)["skipped"], 1)
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             self.assertEqual(before, c.execute("SELECT * FROM history_records").fetchall())
             self.assertEqual(evidence_before, c.execute("SELECT * FROM evaluation_versions").fetchall())
             self.assertEqual(c.execute("PRAGMA user_version").fetchone()[0], 1)

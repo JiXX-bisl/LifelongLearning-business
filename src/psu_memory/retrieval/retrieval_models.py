@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -114,8 +115,11 @@ class RetrievalConfig:
                 "selector_extra_body 必须能够序列化为合法 JSON"
             ) from error
             
-        if self.device not in ("mps", "cpu"):
-            raise ValueError("当前 device 仅支持 mps 或 cpu")
+        if self.device not in ("mps", "cpu") and (
+            not isinstance(self.device, str)
+            or re.fullmatch(r"cuda:(?:0|[1-9][0-9]*)", self.device) is None
+        ):
+            raise ValueError("device 仅支持 mps、cpu 或 cuda:N（N 为非负整数）")
         if self.embedding_dtype != "float32":
             raise ValueError("当前 embedding_dtype 使用 float32")
         if self.pooling_method != "cls":

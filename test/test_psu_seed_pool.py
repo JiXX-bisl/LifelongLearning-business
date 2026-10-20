@@ -1,6 +1,7 @@
 """由用户独立运行：共同种子初始化的集合、顺序、隔离和失败发布边界。"""
 from __future__ import annotations
 
+from contextlib import closing
 from copy import deepcopy
 import hashlib
 import json
@@ -168,7 +169,7 @@ class SeedPoolTests(unittest.TestCase):
         pool.configure(**scope, config=PoolConfig(strategy="adaptive"))
         self.assertEqual({item["candidate"].key for item in pool.load_active_members(**scope)}, keys)
         self.assertTrue(index.inspect(**scope)["complete"])
-        with sqlite3.connect(store) as connection:
+        with closing(sqlite3.connect(store)) as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM history_records").fetchone()[0], 18)
             for record_json, source_sha in connection.execute("SELECT record_json, source_sha256 FROM history_records"):
                 task = json.loads(record_json)["task"]
@@ -285,6 +286,36 @@ class SeedPoolTests(unittest.TestCase):
         self.assertEqual(index["ready_binding_count"], old_index["ready_binding_count"])
         for item, value in protected.items():
             self.assertEqual(seed_pool._sha(item), value)
+
+    def test_crlf_prompt_uses_text_digest_and_keeps_exact_source_binding(self):
+        from src.psu_memory.pool import difficulty, pool_models
+        from src.psu_memory.pool._common import sha256_text
+
+        sources = self.root / "pool_sources"
+        (sources / "prompts").mkdir(parents=True)
+        prompt = sources / "prompts" / f"{DIFFICULTY_PROMPT_VERSION}.txt"
+        original_prompt = Path(pool_models.__file__).parent / "prompts" / prompt.name
+        text = original_prompt.read_text(encoding="utf-8")
+        prompt.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
+        module_files = {}
+        for module in (difficulty, pool_models):
+            copied = sources / Path(module.__file__).name
+            copied.write_bytes(Path(module.__file__).read_bytes())
+            module_files[module] = str(copied)
+        with patch.object(difficulty, "__file__", module_files[difficulty]), \
+                patch.object(pool_models, "__file__", module_files[pool_models]):
+            original, _, review_path = self.prepare_manual_review()
+            self.assertEqual(original["source_sha256"][str(prompt)], seed_pool._sha(prompt))
+            self.assertNotEqual(seed_pool._sha(prompt), sha256_text(text))
+            pool = SQLitePoolStore(self.run / "seed.sqlite3", record_runs=False)
+            members = pool.load_active_members(namespace=NAMESPACE, data_version=DATA_VERSION)
+            self.assertTrue(all(member["difficulty"].assessment.prompt_sha256 == sha256_text(text)
+                                for member in members))
+            self.assertTrue(self.apply_manual_review(review_path)["ready"])
+            # Even a newline-only source change must still invalidate byte provenance.
+            prompt.write_bytes(text.encode("utf-8"))
+            with self.assertRaisesRegex(ValueError, "来源发生变化"):
+                self.apply_manual_review(review_path)
 
     def test_manual_review_rejects_wrong_source_or_original_level(self):
         _, review, path = self.prepare_manual_review()

@@ -365,6 +365,9 @@ def apply_difficulty_review(*, run_dir, review_path=DEFAULT_DIFFICULTY_REVIEW,
                 raise ValueError("人工复核应用期间来源发生变化：" + path)
 
     verify_sources()
+    # The assessor hashes decoded prompt text (universal newlines), while
+    # source_sha256 binds the exact file bytes checked by verify_sources().
+    prompt_sha256 = sha256_text(prompt_path.read_text(encoding="utf-8"))
     scope = {"namespace": NAMESPACE, "data_version": DATA_VERSION}
     source_pool = SQLitePoolStore(source_store, record_runs=False)
     members = source_pool.load_active_members(**scope)
@@ -393,7 +396,7 @@ def apply_difficulty_review(*, run_dir, review_path=DEFAULT_DIFFICULTY_REVIEW,
                 or assessment.level != model["level"] or assessment.reason != model["reason"]
                 or list(assessment.missing_information) != model["missing_information"]
                 or assessment.prompt_version != DIFFICULTY_PROMPT_VERSION
-                or assessment.prompt_sha256 != source_hashes[str(prompt_path)]
+                or assessment.prompt_sha256 != prompt_sha256
                 or assessment.model_signature.startswith("manual:")
                 or source_pool.get(assessment.cache_key) != assessment):
             raise ValueError("原种子实际问答、顺序或模型标注与绑定来源不一致：" + seed["case_id"])

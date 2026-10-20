@@ -7,6 +7,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from contextlib import closing
 from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -72,7 +73,7 @@ class EmbeddingTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.db = root / self.temp.name / "history.sqlite3"
 
-        with sqlite3.connect(self.db) as connection:
+        with closing(sqlite3.connect(self.db)) as connection, connection:
             for statement in (*HISTORY_SCHEMA, *QUALITY_SCHEMA):
                 connection.execute(statement)
             connection.execute("PRAGMA user_version=1")
