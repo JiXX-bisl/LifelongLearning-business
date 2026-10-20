@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import unittest
 
 from dataclasses import replace
 
 from src.psu_memory.pool.classification import classify
-from src.psu_memory.pool.pool_models import GroupingInput
+from src.psu_memory.pool.pool_models import DIFFICULTY_PROMPT_VERSION, GroupingInput
 from src.psu_memory.pool.difficulty import (
     DifficultyAssessor,
     DifficultyInput,
@@ -150,11 +151,17 @@ class PoolDifficultyTests(unittest.TestCase):
                     },
                     {
                         "role": "agent",
-                        "content": "SELECT COUNT(*) FROM enterprise;",
+                        "content": "旧模型猜测：SELECT 999 AS guessed_count;",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "未经核验的回复：只返回企业名称。",
                     },
                 ],
                 ensure_ascii=False,
             ),
+            data_advice="企业状态字段使用 registration_status。",
+            sql="SELECT COUNT(*) FROM enterprise_basic WHERE registration_status = '存续';",
         )
 
         request = DifficultyInput.from_grouping(grouping)
@@ -177,10 +184,75 @@ class PoolDifficultyTests(unittest.TestCase):
             payload["context_questions"],
             ["统计正常营业的企业数量。"],
         )
-        self.assertNotIn(
-            "SELECT",
-            json.dumps(payload, ensure_ascii=False),
+        self.assertIn(grouping.data_advice, payload["data_advice"])
+        self.assertIn(grouping.sql, payload["data_advice"])
+        self.assertIn("PASS", payload["data_advice"])
+        self.assertNotIn("guessed_count", json.dumps(payload, ensure_ascii=False))
+        self.assertNotIn("未经核验的回复", json.dumps(payload, ensure_ascii=False))
+
+    def test_from_grouping_without_sql_preserves_existing_advice(self):
+        grouping = GroupingInput(
+            execution_id="e1", content_version="v1", question="统计企业数量。",
+            namespace="lesson", data_version="v1", data_advice="按稳定企业身份计数。",
         )
+        for sql in ("", " \n "):
+            with self.subTest(sql=sql):
+                request = DifficultyInput.from_grouping(
+                    replace(grouping, sql=sql), schema_context="企业表字段说明。",
+                )
+                self.assertEqual(request.data_advice, grouping.data_advice)
+                self.assertEqual(request.model_payload(), {
+                    "question": grouping.question,
+                    "context_questions": [],
+                    "schema_context": "企业表字段说明。",
+                    "data_advice": grouping.data_advice,
+                })
+
+    def test_verified_sql_change_uses_a_new_difficulty_cache_key(self):
+        grouping = GroupingInput(
+            execution_id="e1", content_version="v1", question="查看人员任职情况。",
+            namespace="lesson", data_version="v1",
+            sql="SELECT person_entity_id, role FROM enterprise_person;",
+        )
+        first_request = DifficultyInput.from_grouping(grouping)
+        changed_request = DifficultyInput.from_grouping(replace(
+            grouping,
+            sql="SELECT COUNT(DISTINCT person_entity_id), COUNT(DISTINCT assignment_id) FROM enterprise_person;",
+        ))
+        client = FakeClient([model_output("L1"), model_output("L2")])
+        assessor = DifficultyAssessor(client)
+        first = assessor.assess(first_request, admission_state="eligible")
+        changed = assessor.assess(changed_request, admission_state="eligible")
+        repeated = assessor.assess(changed_request, admission_state="eligible")
+
+        self.assertNotEqual(first.assessment.cache_key, changed.assessment.cache_key)
+        self.assertFalse(changed.cache_hit)
+        self.assertTrue(repeated.cache_hit)
+        self.assertEqual(client.calls, 2)
+        self.assertEqual(client.payloads[0]["question"], client.payloads[1]["question"])
+        self.assertIn(grouping.sql, client.payloads[0]["data_advice"])
+        self.assertIn("COUNT(DISTINCT assignment_id)", client.payloads[1]["data_advice"])
+
+    def test_default_v2_prompt_does_not_reuse_v1_cache(self):
+        prompts = Path(__file__).resolve().parents[1] / "src/psu_memory/pool/prompts"
+        cache = MemoryDifficultyCache()
+        client = FakeClient([model_output("L1"), model_output("L2")])
+        legacy = DifficultyAssessor(
+            client, cache=cache, prompt_version="difficulty_v1",
+            prompt_text=(prompts / "difficulty_v1.txt").read_text(encoding="utf-8"),
+        )
+        current = DifficultyAssessor(client, cache=cache)
+        old_result = legacy.assess(make_request(), admission_state="eligible")
+        current_result = current.assess(make_request(), admission_state="eligible")
+
+        self.assertEqual(DIFFICULTY_PROMPT_VERSION, "difficulty_v2")
+        self.assertEqual(current.prompt_version, "difficulty_v2")
+        self.assertEqual(current.prompt_text, (prompts / "difficulty_v2.txt").read_text(encoding="utf-8"))
+        self.assertNotEqual(old_result.assessment.cache_key, current_result.assessment.cache_key)
+        self.assertFalse(current_result.cache_hit)
+        self.assertEqual(client.calls, 2)
+        self.assertEqual(cache.get(old_result.assessment.cache_key).level, "L1")
+        self.assertEqual(current_result.assessment.level, "L2")
 
     def test_reject_unstructured_context(self):
         with self.assertRaises(ValueError):
@@ -270,7 +342,7 @@ class PoolDifficultyTests(unittest.TestCase):
         )
         changed_prompt_version = DifficultyAssessor(
             client,
-            prompt_version="difficulty_v2",
+            prompt_version="difficulty_v1",
         )
         changed_prompt_text = DifficultyAssessor(
             client,

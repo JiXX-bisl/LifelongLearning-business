@@ -6,6 +6,8 @@ from pathlib import Path
 
 from src.project_paths import resolve_project_path
 from ..integration.common import read_json, write_json
+from .comparison import COMPARISON_VERSION
+from .comparison_versions import SUPPORTED_COMPARISON_VERSIONS
 
 MODES = ("baseline", "fifo", "adaptive", "fixed")
 POLICY = "sql_result_direct_v1"
@@ -66,6 +68,8 @@ def load_config(path=DEFAULT_CONFIG):
     if value.get("policy") != POLICY:
         raise ValueError("仅支持sql_result_direct_v1，请使用新的直接比较配置")
     config = deepcopy(value)
+    if config.setdefault("comparison_version", COMPARISON_VERSION) not in SUPPORTED_COMPARISON_VERSIONS:
+        raise ValueError("不支持的comparison_version；请使用已支持版本并准备新运行目录")
     conditions = config.get("conditions", ["baseline", "fifo", "adaptive"])
     if (not isinstance(conditions, list) or not conditions
             or len(set(conditions)) != len(conditions)
@@ -84,7 +88,7 @@ def load_config(path=DEFAULT_CONFIG):
         config[key] = str(resolve_project_path(config[key]))
         if not Path(config[key]).is_file():
             raise FileNotFoundError(config[key])
-    for key in ("public_context", "acceptance_report", "source_store"):
+    for key in ("public_context", "acceptance_report", "source_store", "split_file"):
         if config.get(key) is not None:
             config[key] = str(resolve_project_path(config[key]))
             if not Path(config[key]).is_file():

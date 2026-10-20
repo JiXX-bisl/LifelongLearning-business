@@ -10,8 +10,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict, replace
 from unittest.mock import Mock, patch
 
-import test_psu_active_members as active_fixtures
-import test_psu_prefilter as prefilter_fixtures
+from test import test_psu_active_members as active_fixtures
+from test import test_psu_prefilter as prefilter_fixtures
 
 from src.psu_memory.cli import select_experience
 from src.psu_memory.evaluation.quality_models import Feedback

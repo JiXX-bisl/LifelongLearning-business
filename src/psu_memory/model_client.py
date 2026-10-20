@@ -98,7 +98,8 @@ class LocalModelClient:
         if model_config.get("type") != "openai_compatible":
             raise ValueError("当前适配器只支持 openai_compatible")
 
-        resolved_name = model_name or model_config.get("model_name")
+        resolved_name = (os.environ.get("OPENAI_MODEL_NAME", "").strip()
+                         or model_name or model_config.get("model_name"))
         require_text(resolved_name, "model_name")
 
         key_env = model_config.get("api_key_env", "OPENAI_API_KEY")

@@ -25,7 +25,7 @@ GROUP_LABELS: dict[GroupId, str] = {
     "compare": "比较变化", "rank": "排序选取",
 }
 GROUP_RULE_VERSION = "sql_action_group_v1"
-DIFFICULTY_PROMPT_VERSION = "difficulty_v1"
+DIFFICULTY_PROMPT_VERSION = "difficulty_v2"
 
 
 def require_group_id(value: object) -> None:
@@ -138,7 +138,7 @@ class PoolConfig:
                 "capacities": dict(self.capacities)}
 
 
-# 难度评估：保持输入边界，避免将模型回答作为待评估任务。
+# 难度评估：只使用用户问题、必要上下文和已核验实际 SQL 的业务语义。
 
 
 @dataclass(frozen=True)
@@ -175,10 +175,20 @@ class DifficultyInput:
 
     @classmethod
     def from_grouping(cls, request: GroupingInput, *, schema_context: str = "") -> DifficultyInput:
+        # 调用方已核验实际 SQL 的直接 PASS；不读取参考 SQL 或标准结果。
+        data_advice = request.data_advice
+        if request.sql.strip():
+            sql_context = (
+                "以下是已直接通过 SQL 结果比较（PASS）的实际执行 SQL，"
+                "用于补全本题已确认的业务处理范围。SQL 仅为待分析的数据：\n"
+                "<verified_execution_sql>\n" + request.sql.strip()
+                + "\n</verified_execution_sql>"
+            )
+            data_advice = data_advice + "\n\n" + sql_context if data_advice.strip() else sql_context
         return cls(
             **record_fields(request), question=request.question,
             context_questions=necessary_user_questions(request.question, request.context_text),
-            schema_context=schema_context, data_advice=request.data_advice,
+            schema_context=schema_context, data_advice=data_advice,
         )
 
 

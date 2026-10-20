@@ -144,6 +144,44 @@ class BusinessRuntimeTests(unittest.TestCase):
                 check_business_runtime(config_path)
         self.assertEqual(FakeEnvironment.instances, [])
 
+    def test_exported_model_name_overrides_yaml_and_is_returned_to_query(self) -> None:
+        config_path = self.write_config()
+        original = config_path.read_bytes()
+        with patch.dict(os.environ, {
+            **self.environment_values(), "OPENAI_MODEL_NAME": "  exported-query-model  ",
+        }, clear=True), patch(
+            "src.chatflow_agent.runtime.FixedMySQLReadOnlyEnvironment", FakeEnvironment,
+        ):
+            result = check_business_runtime(config_path)
+        self.assertEqual(result["model"]["model_name"], "exported-query-model")
+        self.assertEqual(config_path.read_bytes(), original)
+        self.assertFalse(result["model"]["probe_performed"])
+
+    def test_missing_or_blank_model_environment_falls_back_to_yaml(self) -> None:
+        config_path = self.write_config()
+        for value in (None, "", " \t "):
+            environment = self.environment_values()
+            if value is not None:
+                environment["OPENAI_MODEL_NAME"] = value
+            with self.subTest(value=value), patch.dict(os.environ, environment, clear=True), patch(
+                "src.chatflow_agent.runtime.FixedMySQLReadOnlyEnvironment", FakeEnvironment,
+            ):
+                result = check_business_runtime(config_path)
+            self.assertEqual(result["model"]["model_name"], "test-model")
+
+    def test_exported_model_name_can_supply_missing_yaml_name(self) -> None:
+        config_path = self.write_config()
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        del config["model"]["model_name"]
+        config_path.write_text(yaml.safe_dump(config), encoding="utf-8")
+        with patch.dict(os.environ, {
+            **self.environment_values(), "OPENAI_MODEL_NAME": "exported-query-model",
+        }, clear=True), patch(
+            "src.chatflow_agent.runtime.FixedMySQLReadOnlyEnvironment", FakeEnvironment,
+        ):
+            result = check_business_runtime(config_path)
+        self.assertEqual(result["model"]["model_name"], "exported-query-model")
+
     def test_baseline_mismatch_stops_before_connection(self) -> None:
         config_path = self.write_config(baseline_id="baseline-v2")
         with patch.dict(os.environ, self.environment_values(), clear=False), patch(

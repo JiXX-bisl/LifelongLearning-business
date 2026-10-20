@@ -6,7 +6,7 @@ import json
 import unittest
 from dataclasses import replace
 
-import test_psu_prefilter as prefilter_fixtures
+from test import test_psu_prefilter as prefilter_fixtures
 
 from src.psu_memory.pool._common import canonical_json, sha256_text
 from src.psu_memory.retrieval.embedding import embedding_signature

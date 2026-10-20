@@ -1,0 +1,31 @@
+{
+  "version": "psu_seed_difficulty_review_v1",
+  "actor": "assistant",
+  "namespace": "validation-v30-120-v1.0.2-natural-v0.3.0-split-v1",
+  "data_version": "synthetic_enterprise_v30_120_v1.0.2",
+  "source_run": {
+    "path": "data/derived/psu_memory/seeds/initial-20261019-160745-357466",
+    "summary_sha256": "3563a516d46a9e1dda095d70499f4573d9eb9922f674266ca1b610682cef646f",
+    "seed_sha256": "f9882c99624e87ba37eb837dd5a09800a89c7300244ca9988b87182839a737e9"
+  },
+  "changes": [
+    {
+      "case_id": "B2-L3-02",
+      "from_level": "L3",
+      "to_level": "L2",
+      "reason": "选取有效月报并换算单位后，直接统计已报月份数、已知税额月份数与已知税额小计，属于单层汇总。未知税额不视为零，已知小计不等同于完整全年税额；无需跨期对齐或复杂推导，与B3-L1-01的L2口径一致。"
+    },
+    {
+      "case_id": "C4-L1-01",
+      "from_level": "L3",
+      "to_level": "L2",
+      "reason": "选取有效月报后汇总两个月的营业收入和利润总额，再计算利润总额除以营业收入。月份与非空值计数、零分母判断属于直接完整性约束，整体符合简单聚合及派生指标，不因分成多个CTE而升为L3。"
+    },
+    {
+      "case_id": "C6-L1-S01-T1",
+      "from_level": "L3",
+      "to_level": "L2",
+      "reason": "按企业和月份选择有效正式月报、统一单位并去重后，筛选净利润小于零的月份并返回明细。不存在连续性判断或跨月比较；版本分组选优加直接筛选，与A5-L1两题的L2口径一致。"
+    }
+  ]
+}

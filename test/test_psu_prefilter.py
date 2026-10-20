@@ -6,8 +6,8 @@ import json
 import unittest
 from unittest.mock import patch
 
-import test_psu_retrieval_index as index_fixtures
-from test_psu_embedding import FakeEncoder
+from test import test_psu_retrieval_index as index_fixtures
+from test.test_psu_embedding import FakeEncoder
 
 from src.psu_memory.models import RetrievalRequest
 from src.psu_memory.evaluation.quality_models import Feedback
@@ -373,7 +373,7 @@ class PrefilterTests(unittest.TestCase):
             result.diagnostics["uncompared_member_count"], 1
         )
 
-    def test_correction_index_and_current_sql_flow(self):
+    def test_corrected_sql_is_retrieved_only_after_new_pass(self):
         key = self.members.detail_keys[0]
         before = self.service.prefilter(self.request(BASE))
         old = next(
@@ -393,7 +393,21 @@ class PrefilterTests(unittest.TestCase):
             notes="此类企业名单应注意去重。",
         ))["decision"]
 
-        self.members._annotate(key)
+        self.assertFalse(corrected["execution_verified"])
+        self.assertFalse(corrected["direct_sql_result_verified"])
+        with self.assertRaisesRegex(RuntimeError, "准入状态已变化"):
+            self.members._annotate(key)
+        self.pool.sync(namespace="unit", data_version="v1")
+
+        remaining = self.service.prefilter(self.request(BASE))
+        self.assertEqual(remaining.status, "ok")
+        self.assertNotIn(key, {
+            item["member"]["candidate"].execution_id for item in remaining.candidates
+        })
+
+        # 模拟重新执行修正SQL并直接核验PASS，作为独立的新执行记录入池。
+        new_key = self.members._add_sample(BASE, sql=corrected_sql)
+        self.assertNotEqual(new_key, key)
         self.pool.sync(namespace="unit", data_version="v1")
 
         calls = self.encoder.calls
@@ -412,19 +426,25 @@ class PrefilterTests(unittest.TestCase):
         self.assertEqual(result.status, "ok")
         current = next(
             item for item in result.candidates
-            if item["member"]["candidate"].execution_id == key
+            if item["member"]["candidate"].execution_id == new_key
         )
         quality = current["member"]["quality"]
 
-        self.assertEqual(
+        self.assertNotEqual(
             quality.content_version,
             corrected["content_version"],
         )
         self.assertEqual(quality.content["sql"], corrected_sql)
-        self.assertIn("去重", quality.content["notes"])
-        self.assertIn("user_confirmed_correction", quality.basis)
-        self.assertNotIn("reference_result_match", quality.basis)
-        self.assertFalse(quality.execution_verified)
+        self.assertEqual(quality.content["operation"]["sql"], corrected_sql)
+        self.assertNotIn("user_confirmed_correction", quality.basis)
+        self.assertIn("reference_result_match", quality.basis)
+        self.assertTrue(quality.execution_verified)
+        self.assertTrue(quality.direct_sql_result_verified)
+        self.assertEqual(current["binding"]["cache_key"], old["binding"]["cache_key"])
+        self.assertNotEqual(current["binding"]["index_key"], old["binding"]["index_key"])
+        self.assertNotIn(key, {
+            item["member"]["candidate"].execution_id for item in result.candidates
+        })
 
     def test_zero_capacity_stops_retrieval_without_suspending(self):
         from src.psu_memory.pool.pool_models import GROUP_IDS, PoolConfig

@@ -16,6 +16,8 @@ def main(argv=None):
         command.add_argument("--config", default=DEFAULT_CONFIG)
         if name == "prepare":
             command.add_argument("--run-dir", required=True)
+            command.add_argument("--case-limit", type=int,
+                                 help="仅取当前测试分区前N题，不得截断多轮会话；默认使用全部题目")
     running = commands.add_parser("run")
     running.add_argument("--run-dir", required=True)
     running.add_argument("--mode", choices=MODES, required=True)
@@ -26,14 +28,15 @@ def main(argv=None):
         if args.command == "list-questions":
             config = load_config(args.config)
             _, cases = load_cases(config["questions"])
-            selected = [c for c in cases if c["id"] not in config["exclude_case_ids"]]
+            from ..validation.splits import select_cases
+            selected = select_cases(config, cases)
             for case in selected:
                 print(f"{case['id']} [{case['session']} 第{case['turn']}轮] {case['question']}")
             print(f"SQL测试题数：{len(selected)}")
             return 0
         if args.command == "prepare":
             from ..validation.runner import prepare
-            result = prepare(args.config, args.run_dir)
+            result = prepare(args.config, args.run_dir, case_limit=args.case_limit)
         elif args.command == "run":
             from ..validation.runner import run_condition
             result = run_condition(args.run_dir, args.mode)

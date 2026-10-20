@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 import unittest
 from dataclasses import asdict, replace
@@ -48,6 +49,7 @@ class ModelClientTests(unittest.TestCase):
             {
                 "OPENAI_API_KEY": "test-secret",
                 "OPENAI_BASE_URL": "https://example.invalid/v1",
+                "OPENAI_MODEL_NAME": "",
             },
         )
         environment.start()
@@ -204,6 +206,48 @@ class ModelClientTests(unittest.TestCase):
         self.assertNotIn("max_retries", self.sdk_options[0])
         self.assertNotIn("response_format", self.sent[0])
         self.assertNotIn("extra_body", self.sent[0])
+
+    def test_environment_model_name_overrides_all_clients_and_cache_signatures(self):
+        clients = []
+        with patch.dict(os.environ, {"OPENAI_MODEL_NAME": "  exported-model  "}):
+            clients = [
+                LocalDifficultyClient({**self.model_config, "request_interval_seconds": 0}),
+                LocalSelectorClient(
+                    self.model_config,
+                    retrieval_config=replace(self.config, selector_model_name="configured-selector"),
+                    model_name="explicit-selector",
+                ),
+            ]
+        for client in clients:
+            self.addCleanup(client.close)
+            self.assertEqual(client._model.model_name, "exported-model")
+            self.assertEqual(json.loads(client.signature)["model_name"], "exported-model")
+            self.assertIsNone(self.call(client).error_type)
+        self.assertEqual([item["model"] for item in self.sent], ["exported-model"] * 2)
+        self.assertEqual(self.model_config["model_name"], "kimi-k2.6")
+
+        with patch.dict(os.environ, {"OPENAI_MODEL_NAME": "another-model"}):
+            changed = LocalDifficultyClient({**self.model_config, "request_interval_seconds": 0})
+        self.addCleanup(changed.close)
+        self.assertNotEqual(changed.signature, clients[0].signature)
+        self.assertEqual(clients[0]._model.model_name, "exported-model")
+
+    def test_missing_or_blank_environment_model_keeps_configured_names(self):
+        for value in (None, "", " \t "):
+            with self.subTest(value=value), patch.dict(os.environ):
+                if value is None:
+                    os.environ.pop("OPENAI_MODEL_NAME", None)
+                else:
+                    os.environ["OPENAI_MODEL_NAME"] = value
+                difficulty = LocalDifficultyClient(self.model_config)
+                selector = LocalSelectorClient(
+                    self.model_config,
+                    retrieval_config=replace(self.config, selector_model_name="configured-selector"),
+                )
+                self.addCleanup(difficulty.close)
+                self.addCleanup(selector.close)
+                self.assertEqual(difficulty._model.model_name, "kimi-k2.6")
+                self.assertEqual(selector._model.model_name, "configured-selector")
 
     def test_existing_business_observer_contract(self):
         model = lm.OpenAICompatibleLanguageModel(

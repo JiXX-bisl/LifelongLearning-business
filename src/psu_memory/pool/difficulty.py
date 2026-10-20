@@ -130,7 +130,7 @@ class DifficultyAssessor:
             prompt_path = (
                 Path(__file__).parent
                 / "prompts"
-                / "difficulty_v1.txt"
+                / "difficulty_v2.txt"
             )
             prompt_text = prompt_path.read_text(encoding="utf-8")
         

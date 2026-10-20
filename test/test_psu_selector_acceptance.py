@@ -8,9 +8,9 @@ import unittest
 from dataclasses import replace
 from unittest.mock import Mock, patch
 
-import test_psu_model_client as client_fixtures
-import test_psu_prefilter as prefilter_fixtures
-import test_psu_selector as selector_fixtures
+from test import test_psu_model_client as client_fixtures
+from test import test_psu_prefilter as prefilter_fixtures
+from test import test_psu_selector as selector_fixtures
 
 from src.psu_memory.pool._common import canonical_json
 from src.psu_memory.retrieval.index_store import SQLiteRetrievalIndex

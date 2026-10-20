@@ -15,7 +15,7 @@ from src.project_paths import PROJECT_ROOT
 from src.psu_memory.history.history_store import SCHEMA as HISTORY_SCHEMA
 from src.psu_memory.evaluation.quality_store import SCHEMA as QUALITY_SCHEMA
 from src.psu_memory.pool._common import sha256_text
-from src.psu_memory.pool.pool_store import SQLitePoolStore
+from src.psu_memory.pool.pool_store import POOL_SCHEMA_VERSION, SQLitePoolStore
 from src.psu_memory.retrieval.embedding import (
     EmbeddingUnavailable,
     LocalBgeM3Encoder,
@@ -259,7 +259,7 @@ class EmbeddingTests(unittest.TestCase):
         result = self.cache.initialize()
 
         self.assertEqual(result["history_schema_version"], 1)
-        self.assertEqual(result["pool_schema_version"], 2)
+        self.assertEqual(result["pool_schema_version"], POOL_SCHEMA_VERSION)
         self.assertEqual(result["retrieval_schema_version"], 1)
         self.assertEqual(result["vector_count"], 1)
 

@@ -1,0 +1,9 @@
+# Direct runtime dependencies recorded from the existing llm_api environment.
+# OpenAI 3.x is required for DefaultHttpx2Client / DefaultAsyncHttpx2Client.
+# Install together with requirements-embedding.txt for the full PSU experiment.
+openai==3.6.0
+pydantic==2.13.5
+mysql-connector-python==9.1.0
+PyYAML==6.0.2
+numpy==1.26.4
+-r requirements-psu.txt

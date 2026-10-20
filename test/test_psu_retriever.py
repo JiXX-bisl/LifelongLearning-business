@@ -7,8 +7,8 @@ import unittest
 from dataclasses import replace
 from unittest.mock import Mock, patch
 
-import test_psu_active_members as active_fixtures
-import test_psu_selector as selector_fixtures
+from test import test_psu_active_members as active_fixtures
+from test import test_psu_selector as selector_fixtures
 
 from src.psu_memory.interfaces import ExperienceRetriever, MemoryComponent
 from src.psu_memory.models import ContextItem, RetrievalResult, UsageMetrics

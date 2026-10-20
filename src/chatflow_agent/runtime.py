@@ -154,7 +154,10 @@ def check_business_runtime(config_path: str | Path) -> dict[str, Any]:
     model_type = _text(model.get("type"), "model.type")
     if model_type != "openai_compatible":
         raise BusinessRuntimeError(f"不支持的模型类型：{model_type}。")
-    model_name = _text(model.get("model_name"), "model.model_name")
+    model_name = _text(
+        os.environ.get("OPENAI_MODEL_NAME", "").strip() or model.get("model_name"),
+        "model.model_name",
+    )
     api_key_env = _text(model.get("api_key_env"), "model.api_key_env")
     base_url_env = _text(model.get("base_url_env"), "model.base_url_env")
     password_env = _text(database.get("password_env"), "database.password_env")

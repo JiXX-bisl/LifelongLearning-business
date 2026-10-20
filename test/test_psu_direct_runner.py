@@ -6,9 +6,12 @@ from __future__ import annotations
 
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from copy import deepcopy
+import hashlib
 import io
+import os
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -37,6 +40,8 @@ class DirectRunnerTests(unittest.TestCase):
         ]
         self.standards = {"q1": {"columns": ["value"], "rows": [[1]]},
                           "q2": {"columns": ["value"], "rows": [[2]]}}
+        self.comparison_contexts = {
+            case["id"]: {"enterprises": [], "amount_unit": "元"} for case in self.cases}
         self.public = [{"role": "user", "content": "当前数据基准日为2026-08-31。"}]
         self.baseline = self.root / "baseline"
         self.baseline.mkdir()
@@ -86,6 +91,8 @@ class DirectRunnerTests(unittest.TestCase):
         write_json(self.run / "config.json", {
             "policy": POLICY, "run_id": "fixture-run", "namespace": "direct-test",
             "implementation_version": runner.IMPLEMENTATION_VERSION,
+            "comparison_version": runner.COMPARISON_VERSION,
+            "comparison_contexts": self.comparison_contexts,
             "data_version": "fixture-v1", "conditions": self.config["conditions"],
             "initial_state": "empty", "cases": self.cases, "standards": self.standards,
             "public_context": self.public, "business_config": str(self.business_path),
@@ -147,6 +154,8 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(saved["standards"], self.standards)
         self.assertEqual(saved["public_context"], self.public)
         self.assertEqual(saved["implementation_version"], "dev_v0.1")
+        self.assertEqual(saved["comparison_version"], runner.COMPARISON_VERSION)
+        self.assertEqual(saved["comparison_contexts"], self.comparison_contexts)
         self.assertEqual(saved["pool_configs"]["fifo"]["strategy"], "fifo")
         copies = [(self.run / mode / "history.sqlite3").read_bytes() for mode in self.config["conditions"]]
         self.assertEqual(len(set(copies)), 1)
@@ -154,6 +163,7 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertTrue(all(call.args[1] is False for call in mark_completed.call_args_list))
         business = yaml.safe_load((self.run / "business.yaml").read_text())
         self.assertNotIn("ground_truth", business)
+        self.assertNotIn("comparison_contexts", business)
         self.assertEqual(business["data"]["baseline_dir"], str(self.run / "inputs"))
         self.assertEqual(Path(business["prompt"]["rules_file"]).read_bytes(), self.rules_path.read_bytes())
         snapshots = {path.name: path.read_bytes() for path in (self.run / "inputs").iterdir()}
@@ -167,19 +177,220 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(loaded["standards"], self.standards)
         self.assertEqual({path.name: path.read_bytes() for path in (self.run / "inputs").iterdir()}, snapshots)
 
-    def test_snapshot_copies_identical_seeds_before_configuring_each_strategy(self):
-        from src.psu_memory.pool.pool_models import GROUP_RULE_VERSION
+    def test_prepare_freezes_private_enterprise_identity_context_from_static_data(self):
+        enterprises = [
+            {"enterprise_id": "E1", "enterprise_name": "甲公司", "industry": "不传入核验背景"},
+            {"enterprise_id": "E2", "enterprise_name": "乙公司", "industry": "不传入核验背景"},
+        ]
+        write_json(self.baseline / "tables.json", {"enterprise_basic": enterprises})
+        truth = read_json(self.truth_path)
+        truth["cases"][0]["enterprise_ids"] = ["E1"]
+        truth["cases"][1]["enterprise_ids"] = ["E2", "E1"]
+        write_json(self.truth_path, truth)
 
+        def initialize(path, **_):
+            Path(path).write_bytes(b"mocked empty store")
+
+        with patch("src.psu_memory.integration.bootstrap.initialize_empty_store", side_effect=initialize), \
+                patch.object(runner, "_set_completed"), \
+                patch.object(runner, "_make_service", side_effect=AssertionError("prepare must not query")):
+            runner.prepare(self.config_path, self.run)
+        saved = read_json(self.run / "config.json")
+        first = {"enterprise_id": "E1", "enterprise_name": "甲公司"}
+        second = {"enterprise_id": "E2", "enterprise_name": "乙公司"}
+        expected = {"q1": {"enterprises": [first], "amount_unit": "元"},
+                    "q2": {"enterprises": [second, first], "amount_unit": "元"}}
+        self.assertEqual(saved["comparison_contexts"], expected)
+        self.assertEqual(saved["standards"], self.standards)
+        self.assertEqual(saved["public_context"], self.public)
+        self.assertEqual(saved["cases"], self.cases)
+        self.assertFalse((self.run / "inputs" / "tables.json").exists())
+        self.assertNotIn("comparison_contexts", yaml.safe_load((self.run / "business.yaml").read_text()))
+        (self.baseline / "tables.json").unlink()
+        write_json(self.truth_path, {"cases": []})
+        self.assertEqual(runner.load_run(self.run)[1]["comparison_contexts"], expected)
+
+    def test_missing_or_mismatched_enterprise_definitions_fail_before_store_preparation(self):
+        original_truth = read_json(self.truth_path)
+        valid = {"enterprise_id": "E1", "enterprise_name": "甲公司"}
+        tables_path = self.baseline / "tables.json"
+        with patch("src.psu_memory.integration.bootstrap.initialize_empty_store") as initialize, \
+                patch("src.psu_memory.integration.common.copy_database") as copy_store, \
+                patch.object(runner, "_set_completed") as mark_completed:
+            for problem in ("missing_file", "missing_id", "empty_name", "duplicate_id", "mismatched_name"):
+                with self.subTest(problem=problem):
+                    truth = deepcopy(original_truth)
+                    truth["cases"][0]["enterprise_ids"] = ["E1"]
+                    if problem == "mismatched_name":
+                        truth["cases"][0]["expected_result"] = {
+                            "columns": ["enterprise_name"], "rows": [["其他公司"]]}
+                    write_json(self.truth_path, truth)
+                    enterprises = [valid]
+                    if problem == "missing_id":
+                        enterprises = []
+                    elif problem == "empty_name":
+                        enterprises = [{**valid, "enterprise_name": ""}]
+                    elif problem == "duplicate_id":
+                        enterprises = [valid, valid]
+                    write_json(tables_path, {"enterprise_basic": enterprises})
+                    if problem == "missing_file":
+                        tables_path.unlink()
+                    run = self.root / problem
+                    with self.assertRaisesRegex(ValueError, "企业静态定义"):
+                        runner.prepare(self.config_path, run)
+                    self.assertFalse(run.exists())
+            initialize.assert_not_called()
+            copy_store.assert_not_called()
+            mark_completed.assert_not_called()
+
+    def test_case_limit_shares_questions_and_denominator_across_conditions(self):
+        extra = {"id": "q3", "session": "another-session", "turn": 1,
+                 "question": "另一家公司呢？", "history": []}
+        questions = read_json(self.questions_path)
+        questions["cases"].append(extra)
+        write_json(self.questions_path, questions)
+        truth = read_json(self.truth_path)
+        truth["cases"].append({"id": "q3", "response_type": "answer",
+                               "expected_result": {"columns": ["value"], "rows": [[3]]}})
+        write_json(self.truth_path, truth)
+
+        def initialize(path, **_):
+            Path(path).write_bytes(b"same mocked initial store")
+
+        with patch("src.psu_memory.integration.bootstrap.initialize_empty_store", side_effect=initialize), \
+                patch.object(runner, "_set_completed"), \
+                patch.object(runner, "_make_service", side_effect=AssertionError("prepare must not query")):
+            prepared = runner.prepare(self.config_path, self.run, case_limit=2)
+        saved = read_json(self.run / "config.json")
+        self.assertEqual(prepared["case_count"], 2)
+        self.assertEqual(saved["cases"], self.cases)
+        self.assertEqual(saved["standards"], self.standards)
+        self.assertEqual(saved["comparison_contexts"], self.comparison_contexts)
+        for mode in ("baseline", "fifo", "adaptive"):
+            with self.subTest(mode=mode), self.runtime([
+                    self.record("actual-q1", 1), self.record("actual-q2", 2)]) as runtime:
+                result = runner.run_condition(self.run, mode)
+                self.assertEqual([call.args[0] for call in runtime[0].query.call_args_list],
+                                 [case["question"] for case in self.cases])
+                self.assertEqual((result["total"], result["recorded"], result["pass"]), (2, 2, 2))
+                self.assertEqual(result["pass_rate"], 1.0)
+
+    def test_invalid_limit_or_truncated_session_fails_before_store_preparation(self):
+        with patch("src.psu_memory.integration.bootstrap.initialize_empty_store") as initialize, \
+                patch("src.psu_memory.integration.common.copy_database") as copy_store, \
+                patch.object(runner, "_set_completed") as mark_completed:
+            for index, limit in enumerate((0, -1, 3, True, "2", 1)):
+                with self.subTest(limit=limit):
+                    run = self.root / f"invalid-limit-{index}"
+                    with self.assertRaisesRegex(ValueError, "--case-limit"):
+                        runner.prepare(self.config_path, run, case_limit=limit)
+                    self.assertFalse(run.exists())
+            initialize.assert_not_called()
+            copy_store.assert_not_called()
+            mark_completed.assert_not_called()
+
+    def add_split_fixture(self):
+        formation = {"id": "formation", "session": "formation", "turn": 1,
+                     "question": "用于形成经验的问题", "history": []}
+        questions = read_json(self.questions_path)
+        questions["cases"].insert(0, formation)
+        write_json(self.questions_path, questions)
+        truth = read_json(self.truth_path)
+        truth["cases"].insert(0, {"id": "formation", "response_type": "answer",
+                                  "expected_result": {"columns": ["value"], "rows": [[99]]}})
+        write_json(self.truth_path, truth)
+        report = self.root / "reference_validation.json"
+        write_json(report, {"verdict": "pass", "approved": True, "data_version": "fixture-v1",
+                            "pass_count": 3, "fail_count": 0, "excluded_ids": ["clarify"],
+                            "ground_truth_sha256_after": hashlib.sha256(self.truth_path.read_bytes()).hexdigest()})
+        split = {
+            "version": "psu_formation_test_split_v1", "data_version": "fixture-v1",
+            "sources": {name: {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+                        for name, path in (("questions", self.questions_path), ("ground_truth", self.truth_path),
+                                           ("reference_validation", report))},
+            "formation_case_ids": ["formation"], "test_case_ids": ["q1", "q2"],
+            "excluded_case_ids": ["clarify"],
+        }
+        path = self.root / "split.json"
+        write_json(path, split)
+        self.config.update({"split_file": str(path), "case_partition": "test"})
+        write_json(self.config_path, self.config)
+        return path, split
+
+    def test_prepare_uses_only_approved_test_partition_and_keeps_whole_session(self):
+        self.add_split_fixture()
+
+        def initialize(path, **_):
+            Path(path).write_bytes(b"mocked empty store")
+
+        with patch("src.psu_memory.integration.bootstrap.initialize_empty_store", side_effect=initialize), \
+                patch.object(runner, "_set_completed"), \
+                patch.object(runner, "_make_service", side_effect=AssertionError("prepare must not query")):
+            result = runner.prepare(self.config_path, self.run)
+        saved = read_json(self.run / "config.json")
+        self.assertEqual(result["case_count"], len(self.cases))
+        self.assertEqual(saved["cases"], self.cases)
+        self.assertEqual(saved["standards"], self.standards)
+        self.assertNotIn("formation", saved["standards"])
+
+    def test_split_source_change_or_split_session_is_rejected_before_preparation(self):
+        path, split = self.add_split_fixture()
+        for problem in ("source_hash", "session"):
+            with self.subTest(problem=problem):
+                changed = deepcopy(split)
+                if problem == "source_hash":
+                    changed["sources"]["questions"]["sha256"] = "0" * 64
+                else:
+                    changed["formation_case_ids"].append("q2")
+                    changed["test_case_ids"].remove("q2")
+                write_json(path, changed)
+                run = self.root / problem
+                with self.assertRaises(ValueError):
+                    runner.prepare(self.config_path, run)
+                self.assertFalse(run.exists())
+
+    def test_shell_rejects_existing_run_without_launching_python(self):
+        self.run.mkdir()
+        previous = b'{"case_count":70,"initial_state":"empty"}\n'
+        (self.run / "config.json").write_bytes(previous)
+        binaries = self.root / "bin"
+        binaries.mkdir()
+        marker = self.root / "python_called"
+        fake_python = binaries / "python"
+        fake_python.write_text('#!/bin/sh\nprintf called > "$PSU_TEST_MARKER"\nexit 91\n', encoding="utf-8")
+        fake_python.chmod(0o755)
+        environment = {**os.environ, "PSU_DIRECT_RUN": str(self.run), "PSU_TEST_MARKER": str(marker),
+                       "PATH": str(binaries) + os.pathsep + os.environ.get("PATH", "")}
+        result = subprocess.run(
+            ["bash", str(ROOT / "scripts/enterprise_query_bench/run_direct_sql_validation.sh")],
+            env=environment, capture_output=True, text=True, timeout=10,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(marker.exists())
+        self.assertEqual((self.run / "config.json").read_bytes(), previous)
+
+    @staticmethod
+    def snapshot_seeds():
+        from src.psu_memory.pool._common import sha256_text
+        from src.psu_memory.pool.pool_models import DIFFICULTY_PROMPT_VERSION, GROUP_RULE_VERSION
+
+        prompt_path = ROOT / "src/psu_memory/pool/prompts" / f"{DIFFICULTY_PROMPT_VERSION}.txt"
+        prompt_sha256 = sha256_text(prompt_path.read_text(encoding="utf-8"))
+        return [
+            {"identity": {"execution_id": key, "content_version": "v1"},
+             "quality": SimpleNamespace(admission_state="eligible"),
+             "grouping": SimpleNamespace(rule_version=GROUP_RULE_VERSION),
+             "difficulty": SimpleNamespace(assessment=SimpleNamespace(
+                 prompt_version=DIFFICULTY_PROMPT_VERSION, prompt_sha256=prompt_sha256))}
+            for key in ("seed-one", "seed-two")
+        ]
+
+    def test_snapshot_copies_identical_seeds_before_configuring_each_strategy(self):
         source = self.root / "seed.sqlite3"
         source.write_bytes(b"same selected seed members and index")
         write_json(self.config_path, {**self.config, "initial_state": "snapshot",
                                      "source_store": str(source)})
-        seeds = [
-            {"identity": {"execution_id": key, "content_version": "v1"},
-             "quality": SimpleNamespace(admission_state="eligible"),
-             "grouping": SimpleNamespace(rule_version=GROUP_RULE_VERSION)}
-            for key in ("seed-one", "seed-two")
-        ]
+        seeds = self.snapshot_seeds()
         initial_pool = Mock()
         initial_pool.load_active_members.return_value = seeds
         initial_pool.load_inputs.return_value = seeds
@@ -218,6 +429,42 @@ class DirectRunnerTests(unittest.TestCase):
             pool.sync.assert_not_called()
         self.assertFalse(initial.exists())
         self.assertEqual(source.read_bytes(), b"same selected seed members and index")
+
+    def test_snapshot_rejects_old_difficulty_version_or_changed_prompt(self):
+        source = self.root / "seed.sqlite3"
+        source.write_bytes(b"old seed difficulty must not be accepted")
+        write_json(self.config_path, {**self.config, "initial_state": "snapshot",
+                                     "source_store": str(source)})
+        for field, value in (("prompt_version", "difficulty_v1"),
+                             ("prompt_sha256", "old-prompt-content")):
+            with self.subTest(field=field):
+                seeds = self.snapshot_seeds()
+                setattr(seeds[0]["difficulty"].assessment, field, value)
+                pool = Mock()
+                pool.load_active_members.return_value = seeds
+                pool.load_inputs.return_value = seeds
+                index = Mock()
+                index.inspect.return_value = {"complete": True, "member_count": 2,
+                                              "ready_binding_count": 4}
+                run = self.root / ("rejected-" + field)
+                with (
+                    patch("src.psu_memory.integration.common.copy_database",
+                          side_effect=shutil.copyfile) as copier,
+                    patch("src.psu_memory.pool.pool_store.SQLitePoolStore", return_value=pool),
+                    patch("src.psu_memory.retrieval.vector_cache.SQLiteVectorCache"),
+                    patch("src.psu_memory.retrieval.index_store.SQLiteRetrievalIndex", return_value=index),
+                    patch.object(runner, "_set_completed") as completed,
+                    patch.object(runner, "_make_service", side_effect=AssertionError("prepare must not query")),
+                ):
+                    with self.assertRaisesRegex(ValueError, "种子难度标注须使用当前提示词"):
+                        runner.prepare(self.config_path, run)
+                self.assertEqual(copier.call_count, 1)
+                pool.configure.assert_not_called()
+                completed.assert_not_called()
+                self.assertFalse((run / ".initial.sqlite3").exists())
+                self.assertFalse((run / "config.json").exists())
+                self.assertTrue(all(not (run / mode).exists() for mode in self.config["conditions"]))
+        self.assertEqual(source.read_bytes(), b"old seed difficulty must not be accepted")
 
     def test_missing_standard_and_partial_session_exclusion_fail_before_creating_run(self):
         truth = read_json(self.truth_path)
@@ -271,6 +518,37 @@ class DirectRunnerTests(unittest.TestCase):
         updater.close.assert_called_once()
         retriever.close.assert_called_once()
 
+    def test_submission_context_scores_reordered_helpers_and_updates_only_correct_identity(self):
+        self.standards = {
+            "q1": {"columns": ["stat_month", "operating_revenue_yuan"], "rows": [["2026-08-01", 12]]},
+            "q2": {"columns": ["stat_month", "operating_revenue_yuan"], "rows": [["2026-08-01", 13]]},
+        }
+        self.comparison_contexts = {
+            "q1": {"enterprises": [{"enterprise_id": "E1", "enterprise_name": "甲公司"}], "amount_unit": "元"},
+            "q2": {"enterprises": [{"enterprise_id": "E2", "enterprise_name": "乙公司"}], "amount_unit": "元"},
+        }
+        records = [self.record("actual-q1", 12), self.record("actual-q2", 13)]
+        for record, amount in zip(records, (12, 13)):
+            record["operations"][0].update({
+                "columns": ["enterprise_name", "revenue", "month", "amount_unit", "enterprise_id"],
+                "rows": [["甲公司", amount, "2026-08", "元", "E1"]],
+            })
+        self.prepared_fixture()
+        with self.runtime(records) as runtime:
+            result = runner.run_condition(self.run, "adaptive")
+            updater, histories = runtime[2], runtime[6]
+        self.assertEqual((result["pass"], result["fail"]), (1, 1))
+        updater.apply.assert_called_once()
+        self.assertEqual(updater.apply.call_args.kwargs["query_id"], "actual-q1")
+        self.assertEqual(updater.apply.call_args.kwargs["case"], self.cases[0])
+        self.assertEqual(updater.apply.call_args.kwargs["record"], records[0])
+        self.assertEqual(histories, [self.public, [*self.public, *self.cases[1]["history"]]])
+        for case_id, verdict in (("q1", "pass"), ("q2", "fail")):
+            saved = read_json(self.run / "adaptive" / "results" / (case_id + ".json"))
+            self.assertEqual(saved["verdict"], verdict)
+            self.assertEqual(set(saved), {
+                "case_id", "condition", "question", "query_id", "sql", "actual", "expected", "verdict"})
+
     def test_fixed_retrieves_but_never_updates(self):
         self.prepared_fixture()
         with self.runtime([self.record("actual-q1", 1), self.record("actual-q2", 2)]) as runtime:
@@ -303,6 +581,35 @@ class DirectRunnerTests(unittest.TestCase):
                 runner.run_condition(self.run, "baseline")
             runtime[3].assert_not_called()
         self.assertFalse((self.run / "baseline" / "results").exists())
+
+    def test_previous_comparison_version_rejected_before_any_store_access_or_output(self):
+        self.prepared_fixture()
+        original = read_json(self.run / "config.json")
+        folder = self.run / "baseline" / "results"
+        with patch.object(runner, "condition_completed") as completed, \
+                patch.object(runner, "_set_completed") as mark_completed, \
+                patch.object(runner, "_make_service") as make_service, \
+                patch.object(reporting, "summarize") as summarize:
+            for version in (None, "explicit_columns_aux_v1", "obsolete-comparison"):
+                with self.subTest(version=version):
+                    config = deepcopy(original)
+                    if version is None:
+                        config.pop("comparison_version")
+                    else:
+                        config["comparison_version"] = version
+                    write_json(self.run / "config.json", config)
+                    self.assertEqual(runner.load_run(self.run)[1], config)
+                    with self.assertRaisesRegex(ValueError, "其他评分口径"):
+                        runner.run_condition(self.run, "baseline")
+                    self.assertFalse(folder.exists())
+                    folder.mkdir()
+                    with self.assertRaisesRegex(ValueError, "其他评分口径"):
+                        runner.run_condition(self.run, "baseline")
+                    folder.rmdir()
+            completed.assert_not_called()
+            mark_completed.assert_not_called()
+            make_service.assert_not_called()
+            summarize.assert_not_called()
 
     def test_safely_rolled_back_update_failure_allows_the_next_case(self):
         from src.psu_memory.integration.direct_update import DirectUpdateError

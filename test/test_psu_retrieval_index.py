@@ -7,8 +7,8 @@ import unittest
 from dataclasses import replace
 from unittest.mock import patch
 
-import test_psu_active_members as member_fixtures
-from test_psu_embedding import FakeEncoder
+from test import test_psu_active_members as member_fixtures
+from test.test_psu_embedding import FakeEncoder
 
 from src.psu_memory.evaluation.quality_models import Feedback
 from src.psu_memory.retrieval.embedding_service import EmbeddingService
@@ -106,12 +106,18 @@ class RetrievalIndexTests(unittest.TestCase):
         self.assertEqual(duplicate["usage"]["encoded_text_count"], 0)
         self.assertEqual(duplicate["unique_cache_key_count"], 5)
 
-    def test_correction_reuses_vector_with_new_binding(self):
+    def test_corrected_sql_requires_new_pass_before_reusing_vector(self):
         self.build()
-        old = self.pool.load_active_members(
-            namespace="unit", data_version="v1"
-        )[0]
+        old = next(
+            member for member in self.pool.load_active_members(namespace="unit", data_version="v1")
+            if member["candidate"].execution_id == self.fixture.detail_keys[0]
+        )
         key = old["candidate"].execution_id
+        old_bindings = {
+            item["representation"]: item
+            for item in self.inspect()["bindings"]
+            if item["identity"]["execution_id"] == key
+        }
 
         corrected = self.fixture.quality.submit_feedback(Feedback(
             key,
@@ -124,7 +130,23 @@ class RetrievalIndexTests(unittest.TestCase):
             notes="测试去重修正",
         ))["decision"]
 
-        self.fixture._annotate(key)
+        self.assertFalse(corrected["execution_verified"])
+        self.assertFalse(corrected["direct_sql_result_verified"])
+        with self.assertRaisesRegex(RuntimeError, "准入状态已变化"):
+            self.fixture._annotate(key)
+        self.pool.sync(namespace="unit", data_version="v1")
+
+        remaining = self.inspect()
+        self.assertTrue(remaining["complete"])
+        self.assertEqual(remaining["member_count"], 3)
+        self.assertEqual(remaining["ready_binding_count"], 6)
+        self.assertNotIn(key, {item["identity"]["execution_id"] for item in remaining["bindings"]})
+
+        # 测试夹具另建一次完整执行及直接PASS记录，不能把人工修正当作执行证据。
+        new_key = self.fixture._add_sample(
+            old["quality"].content["question"], sql=corrected["content"]["sql"],
+        )
+        self.assertNotEqual(new_key, key)
         self.pool.sync(namespace="unit", data_version="v1")
         self.assertFalse(self.inspect()["complete"])
 
@@ -132,16 +154,26 @@ class RetrievalIndexTests(unittest.TestCase):
         self.assertEqual(report["status"], "ok")
         self.assertEqual(report["usage"]["encoded_text_count"], 0)
         self.assertEqual(report["publication"]["inserted_count"], 2)
+        self.assertEqual(report["member_count"], 4)
+        self.assertEqual(report["ready_binding_count"], 8)
 
         selected = [
             item for item in report["bindings"]
-            if item["identity"]["execution_id"] == key
+            if item["identity"]["execution_id"] == new_key
         ]
         self.assertEqual(len(selected), 2)
-        self.assertTrue(all(
-            item["identity"]["content_version"] == corrected["content_version"]
-            for item in selected
-        ))
+        for item in selected:
+            previous = old_bindings[item["representation"]]
+            self.assertEqual(item["cache_key"], previous["cache_key"])
+            self.assertNotEqual(item["index_key"], previous["index_key"])
+        member = next(
+            item for item in self.pool.load_active_members(namespace="unit", data_version="v1")
+            if item["candidate"].execution_id == new_key
+        )
+        self.assertTrue(member["quality"].execution_verified)
+        self.assertTrue(member["quality"].direct_sql_result_verified)
+        self.assertIn("reference_result_match", member["quality"].basis)
+        self.assertNotIn(key, {item["identity"]["execution_id"] for item in report["bindings"]})
         self.assertEqual(self.index.info()["stored_binding_count"], 10)
 
     def test_negative_feedback_excludes_old_index(self):
