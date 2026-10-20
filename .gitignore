@@ -1,6 +1,7 @@
 # Track source and configuration only. Everything else is ignored by default.
 *
 !/.gitignore
+!/.gitattributes
 !/README.md
 !/requirements*.txt
 

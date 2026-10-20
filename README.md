@@ -4,7 +4,9 @@
 
 当前题库为 `enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded`：60 道经验形成题、72 道测试题，另有 2 道澄清题排除在 SQL 验证之外。公共提示为精简 v3，模型需根据自然、较模糊的提问自行选择核心数据。
 
-**克隆仓库后，还需要安装 Python 依赖、下载 BGE-M3 权重、准备 MySQL 和大模型 API，并取得实验输入文件。** 本仓库发布源码、配置、脚本和测试；模型权重、题库、合成数据、SQLite 种子库及历史运行文件位于被忽略的 `data/`，不随 Git 提交。缺少这些实验材料时，仅安装依赖不能复现当前 72 题实验；需要向项目维护者取得对应版本的材料，仓库目前没有附带自动下载地址。
+**克隆仓库后，还需要安装 Python 依赖、下载 BGE-M3 权重、安装实验材料包、准备 MySQL 和大模型 API。** 源码、配置、脚本和测试由 Git 同步；合成数据、验收材料、题库、18 条共同种子及来源证据通过 [GitHub Release 材料包](https://github.com/JiXX-bisl/LifelongLearning-business/releases/tag/repro-v030-20261020) 提供。BGE-M3 权重从官方模型仓库下载。
+
+新机器的顺序：**克隆代码 → 安装 Python 依赖 → 下载并安装材料包（第 3 节）→ 下载 BGE-M3 → 按设备处理种子索引 → 导入 MySQL 并生成本机验收报告 → 配置 API → 由使用者测试和运行。** Docker 或本机 MySQL 的部署由使用者自行配置。Windows 使用 WSL，并优先将项目放在 WSL 的 Linux 文件系统中（例如 `~/projects/`）。
 
 ## 1. 环境与依赖
 
@@ -12,6 +14,7 @@
 | --- | --- |
 | 系统 | macOS / Linux；Windows 使用 WSL。部分脚本使用 Bash 和 `fcntl` |
 | Python | 推荐 3.11；代码使用 `StrEnum`，最低为 3.11 |
+| 下载工具 | 下方命令使用 `curl`；也可用浏览器下载 ZIP 和对应 SHA-256 文件 |
 | MySQL | MySQL 8.0.16+，支持窗口函数、CHECK 约束和 `utf8mb4_0900_ai_ci`；还需 `mysql` 命令行客户端 |
 | 查询/难度/经验选择模型 | 可用的 OpenAI 兼容 Chat Completions API；默认配置为 `kimi-k2.6` |
 | 本地 embedding | `BAAI/bge-m3`，固定 revision，1024 维；权重需单独下载 |
@@ -21,13 +24,15 @@
 在终端执行：
 
 ```bash
-git clone --branch dev_v0.1 https://github.com/JiXX-bisl/LifelongLearning-business.git
+git clone --branch repro-v030-20261020 https://github.com/JiXX-bisl/LifelongLearning-business.git
 cd LifelongLearning-business
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements-runtime.txt -r requirements-embedding.txt -r requirements-dev.txt
 ```
+
+上述命令检出固定发布标签，会处于 detached HEAD 状态，适合复现本次实验。已有仓库可在安装依赖和材料前执行 `git checkout repro-v030-20261020`；继续开发使用 `git switch dev_v0.1`。发布标签固定本次代码与材料的配套版本。
 
 依赖文件的作用：
 
@@ -39,9 +44,25 @@ python -m pip install -r requirements-runtime.txt -r requirements-embedding.txt 
 
 当前三组命令行实验不需要 Streamlit、Docker Python SDK 或单独安装 Vanna。可选网页入口 `scripts/run_business_query_web.py` 需要额外安装 `streamlit`；旧 DBBench 容器和数据转换入口分别还需要 `docker`、`pyarrow`。这些不属于当前三组实验的必要组件。
 
+第三方模块的官方地址如下；安装版本以仓库的 requirements 文件为准：
+
+| 模块 | 官方代码或安装文档 |
+| --- | --- |
+| FlagEmbedding | [FlagOpen/FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding) |
+| PyTorch | [按操作系统及设备选择安装方式](https://pytorch.org/get-started/locally/) |
+| Transformers | [huggingface/transformers](https://github.com/huggingface/transformers) |
+| Hugging Face Hub | [模型下载与缓存说明](https://huggingface.co/docs/huggingface_hub/guides/download) |
+| OpenAI Python SDK | [openai/openai-python](https://github.com/openai/openai-python) |
+| MySQL Connector/Python | [官方文档](https://dev.mysql.com/doc/connector-python/en/) |
+| SQLGlot | [tobymao/sqlglot](https://github.com/tobymao/sqlglot) |
+| Pydantic | [官方文档](https://docs.pydantic.dev/latest/) |
+
 ## 2. 下载 embedding 模型
 
 模型配置为 [`configs/embedding/bge_m3.yaml`](configs/embedding/bge_m3.yaml)，固定使用：
+
+- [BGE-M3 官方模型与权重](https://huggingface.co/BAAI/bge-m3)。
+- [本项目固定 revision 的完整文件列表](https://huggingface.co/BAAI/bge-m3/tree/5617a9f61b028005a4858fdac845db406aefb181)。
 
 ```text
 模型：BAAI/bge-m3
@@ -55,7 +76,7 @@ revision：5617a9f61b028005a4858fdac845db406aefb181
 python scripts/check_embedding.py --device cpu --download-only
 ```
 
-这里的 `--device cpu` 使下载命令不依赖 MPS；`--download-only` 只下载权重，不执行 embedding 推理，也不调用大模型 API。需要能够访问 Hugging Face，并为模型权重和缓存预留磁盘空间。
+这里的 `--device cpu` 使下载命令不依赖 MPS；`--download-only` 只下载权重，不执行 embedding 推理，也不调用大模型 API。先安装上一节的依赖，再运行下载命令。脚本会获取权重、tokenizer 和配置文件，需要能够访问 Hugging Face，并为模型权重和缓存预留磁盘空间。当前实验没有其他需要单独下载的模型。
 
 正式 PSU 检索使用 [`retrieval_config.example.json`](src/psu_memory/retrieval/retrieval_config.example.json) 中的路径，通过 Transformers 从本地加载模型，**不会在运行时自动下载缺失权重**。通用下载/检查脚本与 PSU 检索分别使用自己的配置；移动模型目录时须同步修改 PSU 的 `embedding_model_path`。
 
@@ -81,9 +102,36 @@ python -B -m src.psu_memory.cli.build_retrieval_index \
 
 `cpu-local` 应为新目录，勿覆盖已有文件。该步骤会执行本地 embedding 推理并写入新 SQLite 库，保留种子成员和已复核难度，不请求难度模型。完成后，将所用验证配置中的 `source_store` 指向新库，并确认其 `retrieval_config` 指向上述 CPU 配置。FIFO 与 adaptive 必须使用同一个重建后的种子库。
 
-## 3. 取得当前实验材料
+## 3. 下载并安装当前实验材料
 
-将维护者提供的材料按原相对路径放入项目目录。当前三组入口需要：
+材料版本为 `enterprise-v030-v1.0.2-inputs-20261020`，对应 `synthetic_enterprise_v30_120_v1.0.2` 数据和 natural v0.3.0 题库。包内标明实验源码基线提交；本次发布的代码仅增加材料分发、安装工具和说明，实验逻辑沿用该基线。
+
+包内有 173 个材料文件，原始文件总计 77,082,065 字节；ZIP 为 4,828,797 字节（约 4.8 MB），不含模型权重。
+
+下载入口：
+
+- [Release 说明](https://github.com/JiXX-bisl/LifelongLearning-business/releases/tag/repro-v030-20261020)。
+- [材料 ZIP](https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.zip)。
+- [ZIP 的 SHA-256](https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.zip.sha256)。
+- [逐文件清单及版本信息](https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.manifest.json)。
+
+在克隆后的项目根目录执行：
+
+```bash
+mkdir -p downloads
+curl --fail --location \
+  --output downloads/enterprise-v030-v1.0.2-inputs-20261020.zip \
+  https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.zip
+curl --fail --location \
+  --output downloads/enterprise-v030-v1.0.2-inputs-20261020.zip.sha256 \
+  https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.zip.sha256
+python scripts/enterprise_query_bench/install_reproduction_inputs.py \
+  --archive downloads/enterprise-v030-v1.0.2-inputs-20261020.zip
+```
+
+安装脚本只使用 Python 标准库，先校验 ZIP 的 SHA-256、完整成员清单及所有文件的大小和 SHA-256，再按原相对路径安装。已有相同文件会保留；已有不同文件会停止安装，避免覆盖历史材料。SQLite 只作为文件复制，不打开数据库；安装不请求模型，也不自动导入 MySQL。项目所在文件系统需支持硬链接，macOS 本地磁盘及 WSL Linux 文件系统可用于此流程。
+
+包内材料及用途：
 
 | 相对路径 | 用途 |
 | --- | --- |
@@ -92,11 +140,22 @@ python -B -m src.psu_memory.cli.build_retrieval_index \
 | `data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/questions.json` | 已审核的自然问题 |
 | `data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/ground_truth.json` | 必要结果和参考 SQL，仅供评分 |
 | 同目录的 `split_v1.json`、`reference_validation.json` | 固定形成/测试划分、用户参考结果核验凭据及哈希绑定 |
-| `data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/seed.sqlite3` | 已复核的 18 条共同种子及检索索引；建议一并保留该目录的来源说明和汇总 |
+| `data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/` | 已复核的 18 条共同种子、检索索引及 `summary.json` |
+| `data/derived/psu_memory/seeds/initial-20261019-160745-357466/` | 人工复核前的种子库及初始化汇总，供来源追溯 |
+| `data/experiences/psu_memory/enterprise_v30_120_v1_0_2_initial_seed_v1/seeds.json` | 18 条种子的选种清单及来源绑定 |
+| `data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/` | 形成题 SQL 包及 60 份 SQL |
+| `data/derived/psu_memory/formation/authored-20261019-135802-408380/` 中的汇总及结果 | 60 道形成题的真实执行结果，供来源校验 |
+| 当前题库目录下的 `business_context.json` | 形成题当时使用的公共背景 |
+| `data/catalog/path_map.json` | 原 Mac 绝对路径及旧目录的映射依据 |
+| `provenance/` | 来源绑定的代码/配置副本、种子形成时公共提示及历史验收证据；具体路径见材料清单，不覆盖当前源码 |
 
-以 `split_v1.json` 的 `sources` 记录为准，所有来源文件必须保持内容与哈希一致。不要用空文件或自己拼接的结果替代。`expected_coverage_v3` 还会读取静态 `tables.json` 冻结补充字段依据。
+安装记录写入 `data/catalog/reproduction-bundles/enterprise-v030-v1.0.2-inputs-20261020.json`。以 `split_v1.json` 和各 manifest 的来源记录为准，保留原文件字节；不要改写历史 JSON 的路径、换行或内容。ZIP 避免了 Git 文本换行转换，仓库的 `.gitattributes` 也固定了源码及配置的 LF 换行。
 
-重建合成数据、题库或形成题种子另有脚本，但它们依赖旧输入、形成题 SQL、已核验结果和来源哈希；不等同于从纯源码一键恢复本轮材料。从现有已复核种子复制并重建索引，可以避免重新执行经验形成和难度评估。
+`expected_coverage_v3` 会从包内静态 `tables.json` 冻结补充字段依据。隐藏事实、标准结果和来源证据仅供验收/评分，不作为查询模型提示。历史数据库验收报告放在来源证据目录，安装后仍须按下一节生成本机验收报告。
+
+此包支持**导入并验收已冻结 v1.0.2 数据、使用已复核种子启动新的 72 题实验，以及追溯种子来源**。完整重放种子初始化/人工复核尚有两个限制：历史汇总含原 Mac 绝对路径键，部分代码尚未做跨根目录适配；种子形成时公共提示与当前提示不同，包内保留当时提示副本，但不会替换当前提示。该差异不阻塞现有种子快照的实验入口。包也不包含从旧 40 家数据重新生成所有历史版本所需的完整旧输入。
+
+维护者重新打包可使用 [`package_reproduction_inputs.py`](scripts/enterprise_query_bench/package_reproduction_inputs.py)，范围由 [`reproduction_bundle_v1.json`](configs/validation/reproduction_bundle_v1.json) 固定。该脚本只读取允许清单中的文件，拒绝覆盖已有输出，不打开 SQLite 或执行模型/数据库操作。
 
 ## 4. 准备 MySQL 并验收
 
@@ -154,8 +213,11 @@ export OPENAI_MODEL_NAME='kimi-k2.6'
 由使用者先运行独立测试（模拟远程模型和 embedding，部分测试写入临时 SQLite）：
 
 ```bash
+python -B -m pytest -q test/test_reproduction_bundle_install.py
 bash scripts/enterprise_query_bench/run_coverage_sql_tests.sh
 ```
+
+当前两个入口的测试自行创建所需临时材料；它们不要求下载 BGE 权重。全仓库其他旧版测试可能依赖旧题库，不属于本次 72 题入口。
 
 准备好依赖、权重、数据、种子、API 和本机验收报告后，进行小范围运行，默认三组各 10 题：
 

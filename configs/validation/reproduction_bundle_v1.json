@@ -1,0 +1,1311 @@
+{
+  "schema_version": "1.0",
+  "bundle_id": "enterprise-v030-v1.0.2-inputs-20261020",
+  "source_commit": "4d0746f948d3731c59bc2091ea65276201a828a4",
+  "data_version": "synthetic_enterprise_v30_120_v1.0.2",
+  "question_bank": "enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded",
+  "comparison_version": "expected_coverage_v3",
+  "counts": {
+    "formation": 60,
+    "common_seeds": 18,
+    "test": 72,
+    "excluded": 2,
+    "question_bank_total": 134
+  },
+  "embedding": {
+    "model": "BAAI/bge-m3",
+    "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "model_url": "https://huggingface.co/BAAI/bge-m3/tree/5617a9f61b028005a4858fdac845db406aefb181",
+    "upstream_module_url": "https://github.com/FlagOpen/FlagEmbedding",
+    "weights_included": false,
+    "seed_embedding_device": "mps",
+    "supported_runtime_devices": [
+      "mps",
+      "cpu"
+    ],
+    "device_change_requires_copied_seed_index_rebuild": true
+  },
+  "purpose": "Import and independently accept the frozen synthetic v1.0.2 dataset, then run the current 72-case baseline/FIFO/adaptive experiment using the same reviewed 18-seed starting pool.",
+  "known_limitations": [
+    "Original JSON/SQL/SQLite bytes and original absolute paths are preserved. Historical summaries are evidence, not rewritten portable manifests. Full re-execution of seed initialization/review on another root still requires path-aware source verification.",
+    "The seed-era public prompt is retained only under provenance/seed-era and is not installed over the current prompt.",
+    "The historical database acceptance report is stored only under provenance/original-environment. The user must generate a new database acceptance report after importing into the destination environment.",
+    "The two SQLite files were packaged as opaque bytes, without opening them or running integrity queries. Their original summary metadata declares 18 seeds.",
+    "MPS seed vectors require a copied-store index rebuild when the destination uses CPU; the original stores must remain unchanged.",
+    "Earlier v2.1 generation inputs and v1.0.0/v1.0.1 candidate datasets are not included. Their recorded hashes remain in build_provenance.json. This bundle imports the frozen v1.0.2 dataset and does not claim end-to-end regeneration from those earlier datasets.",
+    "Embedding weights, Python packages, model/API credentials, MySQL installation, and new experiment outputs are not included."
+  ],
+  "original_project_root": "/Users/arlenjay-mac/Desktop/xky/2026/企业风险大模型",
+  "exact_directories": [
+    "data/sql/synthetic_enterprise_v30_120_v1.0.2",
+    "data/evaluation/synthetic_enterprise_v30_120_v1.0.2",
+    "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1",
+    "data/derived/psu_memory/formation/authored-20261019-135802-408380",
+    "data/derived/psu_memory/seeds/initial-20261019-160745-357466",
+    "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369"
+  ],
+  "bindings": {
+    "public_manifest": "data/sql/synthetic_enterprise_v30_120_v1.0.2/manifest.json",
+    "private_manifest": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/manifest.json",
+    "authored_bundle": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/bundle.json",
+    "formation_summary": "data/derived/psu_memory/formation/authored-20261019-135802-408380/summary.json",
+    "split": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/split_v1.json",
+    "seeds": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_initial_seed_v1/seeds.json",
+    "initial_summary": "data/derived/psu_memory/seeds/initial-20261019-160745-357466/summary.json",
+    "reviewed_summary": "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/summary.json"
+  },
+  "source_path_map": {
+    "configs/business/query_v30_120.yaml": "provenance/seed-era/configs/business/query_v30_120.yaml",
+    "src/psu_memory/retrieval/retrieval_config.example.json": "provenance/seed-era/src/psu_memory/retrieval/retrieval_config.example.json",
+    "src/psu_memory/pool/pool_config.example.json": "provenance/seed-era/src/psu_memory/pool/pool_config.example.json",
+    "src/chatflow_agent/prompts/enterprise_query_basic_v1.txt": "provenance/seed-era/enterprise_query_basic_v1.txt",
+    "src/chatflow_agent/prompts/enterprise_field_mapping_v1.json": "provenance/seed-era/src/chatflow_agent/prompts/enterprise_field_mapping_v1.json",
+    "src/psu_memory/pool/pool_models.py": "provenance/seed-era/src/psu_memory/pool/pool_models.py",
+    "src/psu_memory/pool/difficulty.py": "provenance/seed-era/src/psu_memory/pool/difficulty.py",
+    "src/psu_memory/pool/prompts/difficulty_v2.txt": "provenance/seed-era/src/psu_memory/pool/prompts/difficulty_v2.txt",
+    "src/psu_memory/pool/classification.py": "provenance/seed-era/src/psu_memory/pool/classification.py",
+    "src/psu_memory/validation/initial_seeds.py": "provenance/seed-era/src/psu_memory/validation/initial_seeds.py",
+    "configs/validation/enterprise_v30_120_v1_0_2_seed_difficulty_review_v1.json": "provenance/seed-era/configs/validation/enterprise_v30_120_v1_0_2_seed_difficulty_review_v1.json",
+    "scripts/enterprise_query_bench/apply_seed_difficulty_review.py": "provenance/seed-era/scripts/enterprise_query_bench/apply_seed_difficulty_review.py",
+    "src/psu_memory/validation/seed_pool.py": "provenance/seed-era/src/psu_memory/validation/seed_pool.py"
+  },
+  "files": [
+    {
+      "path": "data/catalog/path_map.json",
+      "source": "data/catalog/path_map.json",
+      "bytes": 7200,
+      "sha256": "a21e90557fc22f20c740c2f71b7419960e99cafad4adcdc3b3533c3cbd362c7f",
+      "category": "historical_path_map"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L1-01.json",
+      "bytes": 3339,
+      "sha256": "d54eafe63532bdb7a9c4bfe572d63587b1fe97561ac74b44d3af3bd25d224974",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L1-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L1-02.json",
+      "bytes": 3699,
+      "sha256": "926f9cb01dd32e17910dbb5705d179514534cf78f26668dd1eebf922fb19a13d",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-01.json",
+      "bytes": 2418,
+      "sha256": "bbfa226729294f25e6e43581f6d480081a6e598d083bdfaea3574f9392c4ddb8",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-02-E1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-02-E1.json",
+      "bytes": 2400,
+      "sha256": "da2b1dc20215c9947167e692fbd624a80b493932cf8d8e779b3e15a24db51979",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-02-E2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-02-E2.json",
+      "bytes": 2401,
+      "sha256": "26254a09be537aeb79a295f77606ff70cb3afaf2808722067c4ecb4a770d13d1",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L2-02.json",
+      "bytes": 2419,
+      "sha256": "86f29b93285fcdf0198db67fc605a746a3eedc12daa4dcb1754cf1c137ecb5db",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L3-01.json",
+      "bytes": 938,
+      "sha256": "b058cffadb3f022bfd4756d682d79240965d2dc974ce3d42ca2be087ca055405",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L3-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A1-L3-02.json",
+      "bytes": 2649,
+      "sha256": "e4545f98ba3991111c82fc90772bb17d38d17a6fb0a2664ff4d7b5936b8894d5",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A2-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A2-L1-01.json",
+      "bytes": 2776,
+      "sha256": "719eba20c509a700b7292173047d7b1b07bdb646be562115bd36af4a43e7fbc8",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A2-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A2-L2-02.json",
+      "bytes": 2823,
+      "sha256": "1d9b41b1e7f64e1ce4dbaaa7875e26c7d34b901c6a406ead62ee14fad229733c",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-01-E1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-01-E1.json",
+      "bytes": 1558,
+      "sha256": "815a507e59cbb66105c90916cdda1a32a744e5cb2b763d4bf5376e1ae43e89b5",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-01-E2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-01-E2.json",
+      "bytes": 1563,
+      "sha256": "c62c5f52f4b139decc468e9562f01794bc3c301e363c56ef16efed1c0a584d29",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-01.json",
+      "bytes": 1549,
+      "sha256": "f6b4c557e9a3f0f7becc3e049c8d52d6d7fdefa4a2c5c44a351ff6e64d7be177",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-02-E1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-02-E1.json",
+      "bytes": 1564,
+      "sha256": "6a9f4f076b671883dadd6b0ddfcecbc3e83df6d69ab1c218f90f3d7344ff2e5a",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-02-E2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-02-E2.json",
+      "bytes": 1558,
+      "sha256": "2563e33bd00dde4b41b0c30b70a0e26ca042a2c739573a83c3dd7d089b813183",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L1-02.json",
+      "bytes": 1566,
+      "sha256": "c0931201f85a0ad05fbaccca3cc43fc95d60819da1632e36d2356ff4e311055f",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L2-02.json",
+      "bytes": 2891,
+      "sha256": "b920cb81f5888bdd6d2bdefc71884dcd28f2caca12c3b41c60539b2c098577c5",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/A5-L3-01.json",
+      "bytes": 1529,
+      "sha256": "83625f0ef9a10ba03ccf7d7b7baed9482b6715b4f8a185a6281e886586a25e0d",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B2-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B2-L2-02.json",
+      "bytes": 1652,
+      "sha256": "18e9d216b369517dcf78574afdaf9ef372f3e513a6b919d2f326d5f54ee438bb",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B2-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B2-L3-01.json",
+      "bytes": 2503,
+      "sha256": "0b8f1e8eb3feed218964ad0fa4aa9ba9eee206de7b864911c715a35a616a1dd5",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B2-L3-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B2-L3-02.json",
+      "bytes": 1961,
+      "sha256": "4b7160870eb02df6a25fecf5eb50f6d956e89788a78cd6098986fa277c3f7320",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L1-01.json",
+      "bytes": 2166,
+      "sha256": "a8f6f3b277fc7a34b26d99e13ee977953c77aadd62ba046c739df4c3b9b8cec6",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L1-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L1-02.json",
+      "bytes": 2172,
+      "sha256": "c9cc4a9357f716055d6f59fd58f89ac6f52134bce4e479e0721a6485ec1eed64",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L2-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L2-01.json",
+      "bytes": 1816,
+      "sha256": "17728864593d110daf55502875300c1348197ca9dfd369099677ba52392d2517",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L2-02.json",
+      "bytes": 1868,
+      "sha256": "a587bc6712f0c3d54207c4d429e10f963e0f816264622c1dd870e123b69bd5f8",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L3-01.json",
+      "bytes": 1259,
+      "sha256": "fb355f9380691dfdfb79f4d2b22b61e3d4fd768932e296f9f48ae87304eeb5b0",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L3-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/B3-L3-02.json",
+      "bytes": 1321,
+      "sha256": "0039c786bd5db7abe8894e3ffd18a590d1de16c7a6e85b53d11ad4fec716e9c5",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L1-01.json",
+      "bytes": 3372,
+      "sha256": "24dcf347ae26aca8a499de0509606b555b2495ea44ff97f5da36ee10bfea4349",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L1-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L1-02.json",
+      "bytes": 3403,
+      "sha256": "0fe9d043331c3b3700ab5926b2400aa917ccdfb06c068dc7f462025edbafe85b",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L2-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L2-01.json",
+      "bytes": 4894,
+      "sha256": "8105e9c5973444e66bc21a03021db286c897e25fb0538a3558e8f55753e8eca0",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L2-02.json",
+      "bytes": 4939,
+      "sha256": "4da4e34fc0b77ad86bfda74bc602195d778ef88b7d5f5ef8ce0fc174ee9ada11",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L3-01.json",
+      "bytes": 3382,
+      "sha256": "e9fabf1f9a59c4f4d2fcfbdad1e61e60bcb79884fd6b2c903444657b51e6fb53",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L3-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C1-L3-02.json",
+      "bytes": 3387,
+      "sha256": "a815297363bc779f4b4addf0fff97471275c6fc291c5d2dde7aaa6bd27c643bc",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L1-01.json",
+      "bytes": 3595,
+      "sha256": "42ddf6edcfb6772e3582b59cb0c9027a0784e628971cadd6e31640277384fde2",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L1-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L1-02.json",
+      "bytes": 3611,
+      "sha256": "f370dba6b2912382db84f3d5c892ed47974e1f0808d067cf0a0dbe535416d843",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L2-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L2-01.json",
+      "bytes": 3623,
+      "sha256": "2b7ec5f704ae64d46314c993ebb62940136fe67a1695b517a254e792452a5bd1",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L2-02.json",
+      "bytes": 3634,
+      "sha256": "6a7443ba98401bc4a260feb6877ff83bb96a48ad94578a413402317afbc6c5de",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L3-01.json",
+      "bytes": 3655,
+      "sha256": "de27af34bc0cffb507d6a93b06bf014fa7c4c7637a1bf9cce8406475364ebc3f",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L3-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C2-L3-02.json",
+      "bytes": 3651,
+      "sha256": "278f830342621043e0ed36bc0850a9757a6af2253069fe6d21cfce4591a51019",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L1-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L1-01.json",
+      "bytes": 2434,
+      "sha256": "134c0ce652e783727f51507a16c3fcd511edb1dabe78830806db4940d5ea57f7",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L1-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L1-02.json",
+      "bytes": 2443,
+      "sha256": "54deb60434cc0ca47f026bfd31cc9c79e8520ae269facec02efa03783d7fe4d7",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L2-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L2-01.json",
+      "bytes": 2428,
+      "sha256": "eff32a4a00135a74a9585c2484542dc61174bd4240d521195a557bea045a3ccb",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L2-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L2-02.json",
+      "bytes": 2443,
+      "sha256": "3feed9170ac7f3aba21bafb639d124c0fd78fce700378105b6404741b59671db",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L3-01.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L3-01.json",
+      "bytes": 2466,
+      "sha256": "b84034edc66923fa8caba4ba198837bba83296208cf0c43d58580913fe7f57e1",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L3-02.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C4-L3-02.json",
+      "bytes": 2465,
+      "sha256": "c2cf012031019222c95d454fce68edd368902e57676cb153aeac75f5e2c73651",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L1-S01-T1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L1-S01-T1.json",
+      "bytes": 1866,
+      "sha256": "763ec2ef43f368573becfb2800d1ed22ea7f95f93b55a530cea5abc0031da498",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L1-S01-T2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L1-S01-T2.json",
+      "bytes": 1885,
+      "sha256": "1a35696f471d41f24bab729c1ef96a26831b5bad63f2b8ec2916cff082f3e690",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L1-S01-T3.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L1-S01-T3.json",
+      "bytes": 2086,
+      "sha256": "b197721c5987f0bb648a7e25693205ff8bf83ce26db277b48f533bf5abc4f00e",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S01-T1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S01-T1.json",
+      "bytes": 1911,
+      "sha256": "c546225c9e9a03514594772e60cd085f8179fd58218be31f2e67806b382199db",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S01-T2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S01-T2.json",
+      "bytes": 2530,
+      "sha256": "09cc11cf4f20e22b25c99cefce5e1f5544a501795ab1a741bfc08df5140780da",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S01-T3.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S01-T3.json",
+      "bytes": 2746,
+      "sha256": "a59bfaf283972b25026dd6a30a5cd8359df0e08c56f1672b1530e09e679e324c",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S02-T1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S02-T1.json",
+      "bytes": 1900,
+      "sha256": "5dcf37176224d872cd754bc2bff8031c1739c0ad4a9063ae64bf959b71ce01aa",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S02-T2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S02-T2.json",
+      "bytes": 2505,
+      "sha256": "1bb6d1f1fe1b2c0cc3770bb7eddd8a994d0766b52dda072429256bdcd8b75a32",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S02-T3.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L2-S02-T3.json",
+      "bytes": 2725,
+      "sha256": "eedebb8972bb5d7c05d35ba972e38576537f665caf4717065d390b8f39e4c788",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S01-T1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S01-T1.json",
+      "bytes": 2124,
+      "sha256": "8550c67b27c962b08dc6ede7288ca43e43c52eb408c5364a97e731a1f67895e5",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S01-T2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S01-T2.json",
+      "bytes": 2225,
+      "sha256": "aecfe925bb71a6a5c323be9fe1639f58228f9abdfb6516589f159a3d6b869aea",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S01-T3.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S01-T3.json",
+      "bytes": 2402,
+      "sha256": "8a2f844d8083f18320b573a6f1f01e8ff935315f56052a94d185e76d719944d1",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S02-T1.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S02-T1.json",
+      "bytes": 2112,
+      "sha256": "12e875b40893e147608f481a2127e543707ef7536a57f6de9cdd60cd1595cb69",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S02-T2.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S02-T2.json",
+      "bytes": 2216,
+      "sha256": "9168388d92a409e7e999854777cd5e5da27efb195a7bb3d96df3e2334e679cf9",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S02-T3.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/results/C6-L3-S02-T3.json",
+      "bytes": 2384,
+      "sha256": "1a4b97e5e9b0709b06ba917e97559d0e0e9c9bdd828e8a95f66dfc9d3d80f5c7",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/formation/authored-20261019-135802-408380/summary.json",
+      "source": "data/derived/psu_memory/formation/authored-20261019-135802-408380/summary.json",
+      "bytes": 16431,
+      "sha256": "b4f8f8ec1467df17e6f00edc3453be36770889e461b82dcea612eb00ee5ebbcd",
+      "category": "formation_evidence"
+    },
+    {
+      "path": "data/derived/psu_memory/seeds/initial-20261019-160745-357466/seed.sqlite3",
+      "source": "data/derived/psu_memory/seeds/initial-20261019-160745-357466/seed.sqlite3",
+      "bytes": 897024,
+      "sha256": "f9882c99624e87ba37eb837dd5a09800a89c7300244ca9988b87182839a737e9",
+      "category": "initial_seed"
+    },
+    {
+      "path": "data/derived/psu_memory/seeds/initial-20261019-160745-357466/summary.json",
+      "source": "data/derived/psu_memory/seeds/initial-20261019-160745-357466/summary.json",
+      "bytes": 20787,
+      "sha256": "3563a516d46a9e1dda095d70499f4573d9eb9922f674266ca1b610682cef646f",
+      "category": "initial_seed"
+    },
+    {
+      "path": "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/seed.sqlite3",
+      "source": "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/seed.sqlite3",
+      "bytes": 937984,
+      "sha256": "f09621c7bcbece6befeb113f801972dfdce8d994a8c8b138cc0ac3132edc5f0d",
+      "category": "reviewed_common_seed"
+    },
+    {
+      "path": "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/summary.json",
+      "source": "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/summary.json",
+      "bytes": 23972,
+      "sha256": "fde8289f809ad98b913fbb6cb16dcd94715b715e47ffd3b004ccea87d2e3fcc4",
+      "category": "reviewed_common_seed"
+    },
+    {
+      "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/ground_truth.json",
+      "source": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/ground_truth.json",
+      "bytes": 678974,
+      "sha256": "e9172ba4f2b4a4e0163b3df5a2621dde4309d8b658f14d92e0da1d9935620c61",
+      "category": "question_bank"
+    },
+    {
+      "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/reference_validation.json",
+      "source": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/reference_validation.json",
+      "bytes": 8904,
+      "sha256": "f4a905cbe9d86be15dbf16cb5e8913927fd6e80d5b5cf41380f2fa4b8d163f39",
+      "category": "question_bank"
+    },
+    {
+      "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/split_v1.json",
+      "source": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/split_v1.json",
+      "bytes": 15721,
+      "sha256": "2a7f76991829cac9afc012c57f95ccc4fdd02c02febeeee481c999943c12bd4e",
+      "category": "question_bank"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/assignments.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/assignments.json",
+      "bytes": 11283,
+      "sha256": "04340b192398a930c9b33d8867fedfd1b139ea950c832d7475e218bb536b4482",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/balance_processes.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/balance_processes.json",
+      "bytes": 6500424,
+      "sha256": "3f5c5fbdece2699c9710ee0a98687f5b1e5b29177ddaadc5d32c19b5c6baa403",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/base_observations.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/base_observations.json",
+      "bytes": 4811853,
+      "sha256": "5096f9018ff65ade48de8b1795b84c78cd85cf1477d7ca25e6f1641e25ecb8ab",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/build_provenance.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/build_provenance.json",
+      "bytes": 10609,
+      "sha256": "b0e47a7fe94e38d7af7dd4fcf68ac081ce56b3a5139fc8446a730c1063a8dcd1",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/construction_review.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/construction_review.json",
+      "bytes": 32391,
+      "sha256": "7f4f75b625e17a3f78ba86b5ef5bfe95e440050164b25b78383f24ef4be9ebb7",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/debt_ledgers.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/debt_ledgers.json",
+      "bytes": 107807,
+      "sha256": "8fa868eaea87f77eed8b7cf02bfa012bdf880a356243c1633a27bfdeaadc442e",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/economic_processes.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/economic_processes.json",
+      "bytes": 21636280,
+      "sha256": "b2dd41ebbafa2abd06c9b99431e040d5521bbc0ee8b14f9138ffa7fd7da7e45b",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/fact_metadata.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/fact_metadata.json",
+      "bytes": 29306718,
+      "sha256": "9ac74bda5d7cd8646380bdbf169af59cbb1bec04a4e10f7233f117bbf1678515",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/generation_config.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/generation_config.json",
+      "bytes": 2669,
+      "sha256": "d9021ae65f7fdb824e462d5cf22e3ee6cfee258d6fd2e3ad523e7ddcbc964ad2",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/generation_constraints.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/generation_constraints.json",
+      "bytes": 23569,
+      "sha256": "1b1026a3c5fb71b4bde46c1f175859478b66d6b68205745514082e2dea7247e2",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/generation_summary.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/generation_summary.json",
+      "bytes": 41959,
+      "sha256": "cbc5a6e5806923354f5a548c5f04bfe78883b3e40561eaee925f4547cfde0d35",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/manifest.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/manifest.json",
+      "bytes": 2870,
+      "sha256": "8c9a3a85125944458ac551325889f4d04750ed86ba202b7fff0a5c63ede30739",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/pollution_ledger.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/pollution_ledger.json",
+      "bytes": 656856,
+      "sha256": "5f44cfa64ba782f30b06a8cfd4955961b627bc809c9a69684ff5e15710a8d8e5",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/pollution_statistics.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/pollution_statistics.json",
+      "bytes": 13689,
+      "sha256": "f7351060ea1f220e9f535781fb456f378ba58bf6c7816fa99242f6f495770823",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/profiles.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/profiles.json",
+      "bytes": 314768,
+      "sha256": "89efda6e34d468aec00e6f5e35fcf16712118e7e417a4133ef01f7e8647fc5c1",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/scenario_definitions.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/scenario_definitions.json",
+      "bytes": 16215,
+      "sha256": "6f950b2de87b7417485a74d16cf55d65b0f34907b1fc18ddadd480c2d40bfe19",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/scenarios.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/scenarios.json",
+      "bytes": 793229,
+      "sha256": "79f9d56bd4c942fddfdc5a93452e35737b63ef3dc55ca320ac1dcaff22d0ed2e",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/truth_tables.json",
+      "source": "data/evaluation/synthetic_enterprise_v30_120_v1.0.2/truth_tables.json",
+      "bytes": 4811853,
+      "sha256": "5096f9018ff65ade48de8b1795b84c78cd85cf1477d7ca25e6f1641e25ecb8ab",
+      "category": "synthetic_private_acceptance"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/bundle.json",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/bundle.json",
+      "bytes": 12100,
+      "sha256": "777202bc2960611de83b711861b824f79983f8c01f5c2d5cea8aced277222661",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L1-01.sql",
+      "bytes": 1370,
+      "sha256": "7bc4a8654ebf0360e8e4e7a40eec1bbec589007f3d6aa37a4f028f84fb996731",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L1-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L1-02.sql",
+      "bytes": 1379,
+      "sha256": "5c24dd1a3b5d3a3d37142befbce65f02010ae0031c12fbf2be2514d552b277b6",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-01.sql",
+      "bytes": 1491,
+      "sha256": "10bc9e1a70782bea707c1043b54e7e9942e5e1f92331aa8f351b1b6eb77e0177",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-02-E1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-02-E1.sql",
+      "bytes": 1497,
+      "sha256": "dbe65d35d661790b03f75b006a84c3241989ef063438bd49279355d9d1700d58",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-02-E2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-02-E2.sql",
+      "bytes": 1497,
+      "sha256": "52f46ff66408b1aa8b6f0a4ea98ce0ca7eda33fdd8a9e41d2eb2140f622abc3d",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L2-02.sql",
+      "bytes": 1515,
+      "sha256": "9f7cb2e67cf2d2e26c4ea80cd2ca0dc8ebe15729e6eb055eb8d8663b39d57674",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L3-01.sql",
+      "bytes": 239,
+      "sha256": "f98c62fdc3733edee66ac0e1f50eefd1ddf7e37bd57380a3f05d199d00d70be5",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L3-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A1-L3-02.sql",
+      "bytes": 1432,
+      "sha256": "0bc59eb4ba33b65113907ad9333a3ae978f27a3c1ad9e94e1c9cd810fcf4c3b7",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A2-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A2-L1-01.sql",
+      "bytes": 1945,
+      "sha256": "444d364f3e7fc67d3f678be733f638f655adfe07beb9e8884ebb1abe1f615c9a",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A2-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A2-L2-02.sql",
+      "bytes": 1942,
+      "sha256": "79912a3c31d783cea54b8cc1bfdd77a91b531325a835f2ed52a64a7e0d4b566f",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-01-E1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-01-E1.sql",
+      "bytes": 821,
+      "sha256": "6c0d66573ad84c055aefbd290faccc9d2e0493689f6c6318c9c4192c4dae43ef",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-01-E2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-01-E2.sql",
+      "bytes": 824,
+      "sha256": "ae302373cba4fa00a29d2094a538eb4eac0f9dce7e5a413980679351d32b11cb",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-01.sql",
+      "bytes": 821,
+      "sha256": "c82c27544846c1846329882b6b47fe71a118e8209d5b6bf15c1a4e7e9b293c4d",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-02-E1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-02-E1.sql",
+      "bytes": 824,
+      "sha256": "2ff222636dbee6490a48204f56d2d25c7c57347bf00201272a15e858d9416336",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-02-E2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-02-E2.sql",
+      "bytes": 821,
+      "sha256": "f2d58fadb9780e3bb3409ea5866fb96f0385d0cf7493705b74c041486307cffa",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L1-02.sql",
+      "bytes": 830,
+      "sha256": "b0eaad8e11688ded449bf3a62fc488e97b5189a6ff6bf4eefb4ddbb87306ed7e",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L2-02.sql",
+      "bytes": 1905,
+      "sha256": "4145009761bd9463b0923e64f6929bb12fb3955d08db0eba4aa61c191b47a8bc",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/A5-L3-01.sql",
+      "bytes": 545,
+      "sha256": "495afeb1db14498856bca14ffb6cbdde244324c53f73804dfe1889794414bc0e",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B2-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B2-L2-02.sql",
+      "bytes": 940,
+      "sha256": "798457507dddfb121304c4501acd653b0df64cc01af0901ee8d90b3fc9b9a408",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B2-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B2-L3-01.sql",
+      "bytes": 1455,
+      "sha256": "b708c0177a920918da17b3d02510a5b59f31cf2d51bd4e52d0b0ac0947090224",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B2-L3-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B2-L3-02.sql",
+      "bytes": 1172,
+      "sha256": "44483747e43d367188370047a7f9844b50ad1d2c46ace00897c185d7391cc8c2",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L1-01.sql",
+      "bytes": 1225,
+      "sha256": "24bff14611f4268562cd14312b9983166206b9b97c9d688c9108f20358b2fc15",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L1-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L1-02.sql",
+      "bytes": 1228,
+      "sha256": "f774557dd5d120987171ec59a401ea827f8e42d35007957a1be7f5dea0465d8d",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L2-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L2-01.sql",
+      "bytes": 1082,
+      "sha256": "9d0f49062c6d233d1e4f56bff27071986666007860a8a5af87f952f8c8c9633c",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L2-02.sql",
+      "bytes": 1107,
+      "sha256": "6201feb9ca9aaa6c2b4bcb6c14f86f81d349b2c773d97ca3fa6351e483105dea",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L3-01.sql",
+      "bytes": 454,
+      "sha256": "775ca141d8371be763f315596b87fac840bbb24fde7f14ee0dcbbda67f69e8bb",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L3-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/B3-L3-02.sql",
+      "bytes": 507,
+      "sha256": "fa7f44331eb47fb34836941660d7686f07433c7c40ec2d82d74b167444afbf31",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L1-01.sql",
+      "bytes": 2454,
+      "sha256": "22db1e8a31c5fcb8fd1f64d8564d0766a5def7e69855d9d56782dc8097fc39df",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L1-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L1-02.sql",
+      "bytes": 2463,
+      "sha256": "120a34fd660e4d800dfc3d2000ef987bf431cd1016bfdbbb422b3ea760fdcef2",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L2-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L2-01.sql",
+      "bytes": 3556,
+      "sha256": "ce17cf38c9bacaf40b1621f80392b39d7bc556336d7aabe0aeb4a06d6f446ab2",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L2-02.sql",
+      "bytes": 3559,
+      "sha256": "15057f1cf02b81185c0cea859fcd37b79b4573067e848b7937475b5a3fc2fcdb",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L3-01.sql",
+      "bytes": 2354,
+      "sha256": "d03a4ef87792760584ebffbc56b67b961851dff8ebe461e2825b1403e60c34fa",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L3-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C1-L3-02.sql",
+      "bytes": 2351,
+      "sha256": "b11394e092774e633b68ddbc221c813a3e11cdfa9e9025e1a382e06d5b96c31e",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L1-01.sql",
+      "bytes": 2544,
+      "sha256": "3b586052e3a1759b2be006313cd83861c60ce7aecdacf5daf3c63d881e303143",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L1-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L1-02.sql",
+      "bytes": 2541,
+      "sha256": "f0d78595cd5e0252297a9d924f182d8ef25396c0a327437a297f79fdcfa16aea",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L2-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L2-01.sql",
+      "bytes": 2541,
+      "sha256": "d17538fe6136676ce3f60620557ec027a1dbdde0f1d62fa1f3acc46293da5053",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L2-02.sql",
+      "bytes": 2541,
+      "sha256": "fb2334c3afbc47843678528baf03c75c625b84619781aac94cc2b18ad61165b6",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L3-01.sql",
+      "bytes": 2538,
+      "sha256": "3128a82db4f56b19396911b8f4d22a903c5b175fd3355e7a102ddaf0f58625e9",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L3-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C2-L3-02.sql",
+      "bytes": 2541,
+      "sha256": "b800cb3249dd686c09593f9226dd49c0e70995424a80a4a8f8d2f5ad92e7c13c",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L1-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L1-01.sql",
+      "bytes": 1592,
+      "sha256": "395896fd62cce97dcc583785d4df235548a1c5403c5f037094899acc29f76b32",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L1-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L1-02.sql",
+      "bytes": 1595,
+      "sha256": "25f00d2fc7c0dcacbd7874acddc376af4c988a3ab977433cd18cd44f9b6b5d9b",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L2-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L2-01.sql",
+      "bytes": 1598,
+      "sha256": "6f6e0c5d99231e7cb235ab7393d72afc2aaf553d59d048bbbcc377984cf69919",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L2-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L2-02.sql",
+      "bytes": 1595,
+      "sha256": "ddebe7e01f907bcf269ce0e72010292ffd5d4a2aaaf887bdb41cf0d33ff7255f",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L3-01.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L3-01.sql",
+      "bytes": 1606,
+      "sha256": "afaa9b959baf16f9e2f6a535117e6415a84e444e7f60692752493be1e6b2547c",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L3-02.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C4-L3-02.sql",
+      "bytes": 1609,
+      "sha256": "933fe500d361780aca734db5fae115eb3c0b3a9415ffe2b7833f8c5881d2f842",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L1-S01-T1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L1-S01-T1.sql",
+      "bytes": 1034,
+      "sha256": "c6c316bfbf9b9b4dc4fbfd41ca2b3ed421f0a7d90aa163d35152825fb18c6792",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L1-S01-T2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L1-S01-T2.sql",
+      "bytes": 1034,
+      "sha256": "066673007ca6a0890a62918fddf7be64311f95518773f48db2295610572b955d",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L1-S01-T3.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L1-S01-T3.sql",
+      "bytes": 1008,
+      "sha256": "1c90e2d0e3f96a2b790e2dfd26d830ec99e54e97acec151fc478ba0d7abea9e1",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S01-T1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S01-T1.sql",
+      "bytes": 1108,
+      "sha256": "9545002bf0aa907673fcefbe4e65bc89e03a41a46da75c25a43a39da2e344078",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S01-T2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S01-T2.sql",
+      "bytes": 1559,
+      "sha256": "0e72816568d71e89e5bb0e30e3cd279ba1da3bd119c5b553499eaede7fa75ec2",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S01-T3.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S01-T3.sql",
+      "bytes": 1520,
+      "sha256": "785e0dc42eeccf975b82e9516b78dbb2e7a8a9a7b0d1d6503665238c10a4c89b",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S02-T1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S02-T1.sql",
+      "bytes": 1111,
+      "sha256": "72938cb307dc9ca9cee65bc704672ab05a744fbe04ad7048e4d2ef0883592caf",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S02-T2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S02-T2.sql",
+      "bytes": 1562,
+      "sha256": "377f14d7dbf77c40a204e82561c95e848d80dde4e24e647bc4d157a74b130756",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S02-T3.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L2-S02-T3.sql",
+      "bytes": 1523,
+      "sha256": "6f4785c5811fc720898e31719ec4ecd891d7028be87ed9b22bc84c9cab224198",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S01-T1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S01-T1.sql",
+      "bytes": 1241,
+      "sha256": "2fd788fcb915079ba2c93932d928274c2f0c59d3d7798d2bda3146ec3adaed30",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S01-T2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S01-T2.sql",
+      "bytes": 1241,
+      "sha256": "0d41c64af32afc7e753a39cafed3738460cb884ccec54cfb277bc68f182a6ccd",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S01-T3.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S01-T3.sql",
+      "bytes": 1125,
+      "sha256": "d651179aba6e963b2bcffbcae492be6e2e85e300a536905bdba765fd9593f6c4",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S02-T1.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S02-T1.sql",
+      "bytes": 1238,
+      "sha256": "f612bcd188f14677c4a92bf74adedb46d55103e67dd47723cf58b9c7a96809b5",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S02-T2.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S02-T2.sql",
+      "bytes": 1238,
+      "sha256": "6f23dac814d95ee5c148b8537586a70adda26c0012e39194ccae6da9109d3bd5",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S02-T3.sql",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/sql/C6-L3-S02-T3.sql",
+      "bytes": 1122,
+      "sha256": "5d4e3738a5d3d9d3a0b52f55a1a23795cd961dd9b46aee6e29529cb26694b5c2",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/题目与SQL清单.md",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_authored_v1/题目与SQL清单.md",
+      "bytes": 12253,
+      "sha256": "702f3e57204351a69f68a6bec58bca2f4c25ed30f3b3f9f371635058ac96bafa",
+      "category": "authored_formation_sql"
+    },
+    {
+      "path": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_initial_seed_v1/seeds.json",
+      "source": "data/experiences/psu_memory/enterprise_v30_120_v1_0_2_initial_seed_v1/seeds.json",
+      "bytes": 63737,
+      "sha256": "9bb20295bdfaa1be49a6e06cce949511782a4e350f4222320dbaa969d5353cba",
+      "category": "seed_selection"
+    },
+    {
+      "path": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/business_context.json",
+      "source": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/business_context.json",
+      "bytes": 2099,
+      "sha256": "762229430c62ceaef36e0784e44070f8414b9b6e0c1727e4a84b8dc03edf92d7",
+      "category": "formation_context"
+    },
+    {
+      "path": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/questions.json",
+      "source": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/questions.json",
+      "bytes": 46810,
+      "sha256": "3ee24b133796e39e3abf2ccaf3a4bf34838ceeaa56c9f8bd7edcdcfca5eea917",
+      "category": "question_bank"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/README.md",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/README.md",
+      "bytes": 864,
+      "sha256": "8e7aa854dd68d685d3bf7251e5a7e592b1c2dbabbc145f670b72b2ebbacf319d",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/business_dictionary.md",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/business_dictionary.md",
+      "bytes": 16559,
+      "sha256": "f08ed2681bec9fce1dd7dd0e75933fe7042879f82a103813781380706751b7b4",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/create_database.sql",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/create_database.sql",
+      "bytes": 187,
+      "sha256": "f64b3bfc0e5d572802201219914393bd617f75cfe021f3e74306976bf9f863c5",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/data_dictionary.json",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/data_dictionary.json",
+      "bytes": 27637,
+      "sha256": "149d8760996a052a61c2b91f332b262c122a5724fb7ab8bac3e60822a6f7e57b",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/database_schema.sql",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/database_schema.sql",
+      "bytes": 10443,
+      "sha256": "ea965ddd280291729ae6ef41dbe0262f98df059f5d485c2535ec2c44938987e9",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/manifest.json",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/manifest.json",
+      "bytes": 2452,
+      "sha256": "4d24f7855d2414020b9a839fced48504a8dcc062ea5d1217e8e7a18d3892c4d8",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "data/sql/synthetic_enterprise_v30_120_v1.0.2/tables.json",
+      "source": "data/sql/synthetic_enterprise_v30_120_v1.0.2/tables.json",
+      "bytes": 4828168,
+      "sha256": "8a7dae27693aae387cbc2be246933027b2ebdaa9c8aae31ee8e263ebbe3d8f14",
+      "category": "synthetic_public"
+    },
+    {
+      "path": "provenance/original-environment/database_acceptance.json",
+      "source": "data/reports/enterprise_v30_120/database_acceptance.json",
+      "bytes": 26182,
+      "sha256": "9ad7d518129df83e4773cba14fddd8ae917fc83af4fe23f146d69d18ea58f823",
+      "category": "historical_acceptance"
+    },
+    {
+      "path": "provenance/seed-era/configs/business/query_v30_120.yaml",
+      "source": "configs/business/query_v30_120.yaml",
+      "bytes": 861,
+      "sha256": "0efccf444b0266de3fd7d35a3046829b1c86644fb81bd7e99c5a03e2d4f5bcd9",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/configs/validation/enterprise_v30_120_v1_0_2_seed_difficulty_review_v1.json",
+      "source": "configs/validation/enterprise_v30_120_v1_0_2_seed_difficulty_review_v1.json",
+      "bytes": 1598,
+      "sha256": "ffb36f8e7ebcec297a64fa32c21db143f31b16331bba818097ad6ed382121ffb",
+      "category": "seed_review_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/enterprise_query_basic_v1.txt",
+      "source": "src/chatflow_agent/prompts/enterprise_query_basic_v1.txt",
+      "bytes": 1356,
+      "sha256": "1e546953b10cfa579f493e96ba7697394cbb6d4e84168978041195430cabc01e",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "daadcb779f8a9b25bc3e224b1b32c1c7eae8adb2"
+    },
+    {
+      "path": "provenance/seed-era/scripts/enterprise_query_bench/apply_seed_difficulty_review.py",
+      "source": "scripts/enterprise_query_bench/apply_seed_difficulty_review.py",
+      "bytes": 1450,
+      "sha256": "b711c64dc61ac58c3b6c0b79b654fe8445eaab8382ea176093a68bbc4bf39b00",
+      "category": "seed_review_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/chatflow_agent/prompts/enterprise_field_mapping_v1.json",
+      "source": "src/chatflow_agent/prompts/enterprise_field_mapping_v1.json",
+      "bytes": 4578,
+      "sha256": "917a72c1a97eb211aa4900a844c2f8523bf1588d9869db4b5b3d9f05326b60c2",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/pool/classification.py",
+      "source": "src/psu_memory/pool/classification.py",
+      "bytes": 14154,
+      "sha256": "2ada25bb6a4e46889f57c8f912ccc4322c3c3a6add5e71c6fc676983390c806d",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/pool/difficulty.py",
+      "source": "src/psu_memory/pool/difficulty.py",
+      "bytes": 9177,
+      "sha256": "299aadb3bda619a8f03dc98b7228a5abac057cf037ec0c955f477f81637bee43",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/pool/pool_config.example.json",
+      "source": "src/psu_memory/pool/pool_config.example.json",
+      "bytes": 144,
+      "sha256": "3870d77ee61c02dcac92d4b48682f6b41e205cbf0382ba4aabcdb3aeb3ee6474",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/pool/pool_models.py",
+      "source": "src/psu_memory/pool/pool_models.py",
+      "bytes": 12133,
+      "sha256": "84abcd69e1c23ea69483b4fa8e8414d2a89814be61cb7dc8dfc7f35323571d28",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/pool/prompts/difficulty_v2.txt",
+      "source": "src/psu_memory/pool/prompts/difficulty_v2.txt",
+      "bytes": 4663,
+      "sha256": "3fe8d8f9353a0c0664b99aaa18861ff689d48055e141967c09d693615621c3f2",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/retrieval/retrieval_config.example.json",
+      "source": "src/psu_memory/retrieval/retrieval_config.example.json",
+      "bytes": 898,
+      "sha256": "fbc8208862453f2582d2c42552756d7ddc5954cca85d4409344fc6f3384ae603",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/validation/initial_seeds.py",
+      "source": "src/psu_memory/validation/initial_seeds.py",
+      "bytes": 9470,
+      "sha256": "db933ff6c9980939a597fcfcfd9faae19833250a73bc85bd3bdb2f87853fa6ab",
+      "category": "seed_source_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    },
+    {
+      "path": "provenance/seed-era/src/psu_memory/validation/seed_pool.py",
+      "source": "src/psu_memory/validation/seed_pool.py",
+      "bytes": 29143,
+      "sha256": "edf40b517e3bcaeaebedb43b78d69ab39e4c9cc33e1b189b69bcc1c5c31b193a",
+      "category": "seed_review_provenance",
+      "source_type": "git",
+      "commit": "4d0746f948d3731c59bc2091ea65276201a828a4"
+    }
+  ]
+}
