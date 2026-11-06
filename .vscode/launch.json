@@ -2,22 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug PSU Memory Quality Assessment",
+            "name": "List Current Validation Questions",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.psu_memory.cli.assess_quality",
+            "module": "src.psu_memory.cli.validate_local",
             "pythonArgs": [
                 "-B"
             ],
             "args": [
-                "--store",
-                "data/derived/psu_memory/history.sqlite3",
-                "--namespace",
-                "local-development",
-                "--data-version",
-                "synthetic_enterprise_v21_40_v1.0.0",
-                "--report",
-                "data/derived/psu_memory/quality_report_repeat.json"
+                "list-questions",
+                "--config",
+                "configs/validation/enterprise_v30_120_v1_0_2_natural_values.json"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

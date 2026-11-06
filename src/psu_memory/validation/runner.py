@@ -13,10 +13,9 @@ from uuid import uuid4
 from src.project_paths import resolve_project_path
 from .common import POLICY, load_cases, load_config, load_public_context, read_json, write_json
 from .comparison import COMPARISON_VERSION, compare_results, evaluate_result
-from .comparison_versions import COVERAGE_COMPARISON_VERSION, SUPPORTED_COMPARISON_VERSIONS
 from .splits import select_cases
 
-IMPLEMENTATION_VERSION = "dev_v0.1"
+IMPLEMENTATION_VERSION = "dev_v1.1"
 
 
 def _validate_inputs(config):
@@ -81,53 +80,6 @@ def _validate_inputs(config):
     return cases, standards, business, public
 
 
-def _comparison_contexts(cases, standards, ground_truth, baseline):
-    """Freeze verifier-only entity identities from approved facts and static data."""
-    facts = {fact.get("id", fact.get("question_id")): fact
-             for fact in read_json(ground_truth)["cases"]}
-    case_ids = {}
-    for case in cases:
-        enterprise_ids = facts[case["id"]].get("enterprise_ids", [])
-        if (not isinstance(enterprise_ids, list)
-                or any(not isinstance(value, str) or not value.strip() for value in enterprise_ids)
-                or len(set(enterprise_ids)) != len(enterprise_ids)):
-            raise ValueError("标准中的企业范围无效：" + case["id"])
-        case_ids[case["id"]] = enterprise_ids
-    identities = {}
-    if any(case_ids.values()):
-        path = Path(baseline) / "tables.json"
-        if not path.is_file():
-            raise ValueError("辅助列核验缺少企业静态定义：tables.json")
-        tables = read_json(path)
-        enterprises = tables.get("enterprise_basic") if isinstance(tables, dict) else None
-        if not isinstance(enterprises, list):
-            raise ValueError("辅助列核验缺少有效的enterprise_basic企业静态定义")
-        for enterprise in enterprises:
-            if (not isinstance(enterprise, dict)
-                    or any(not isinstance(enterprise.get(key), str) or not enterprise[key].strip()
-                           for key in ("enterprise_id", "enterprise_name"))
-                    or enterprise["enterprise_id"] in identities):
-                raise ValueError("辅助列核验的企业静态定义无效或重复")
-            identities[enterprise["enterprise_id"]] = {
-                key: enterprise[key] for key in ("enterprise_id", "enterprise_name")}
-    contexts = {}
-    for case in cases:
-        case_id = case["id"]
-        if any(enterprise_id not in identities for enterprise_id in case_ids[case_id]):
-            raise ValueError("辅助列核验缺少标准所需的企业静态定义：" + case_id)
-        enterprises = [identities[enterprise_id] for enterprise_id in case_ids[case_id]]
-        expected = standards[case_id]
-        entity_columns = [(index, name) for index, name in enumerate(expected["columns"])
-                          if name in ("enterprise_id", "enterprise_name")]
-        if enterprises and any(
-                not any(all(row[index] == enterprise[name] for index, name in entity_columns)
-                        for enterprise in enterprises)
-                for row in expected["rows"]):
-            raise ValueError("标准结果与企业静态定义不一致：" + case_id)
-        contexts[case_id] = {"enterprises": enterprises, "amount_unit": "元"}
-    return contexts
-
-
 def prepare(config_path, run_dir, *, case_limit=None):
     """只准备输入与独立经验库；不请求模型、不查询业务数据库。"""
     import yaml
@@ -142,7 +94,7 @@ def prepare(config_path, run_dir, *, case_limit=None):
 
     config = load_config(config_path)
     if config.get("purpose") == "formation" or config.get("case_partition") == "formation":
-        raise ValueError("经验形成请使用预编写SQL执行入口form_authored_experiences.py")
+        raise ValueError("经验形成请使用预编写SQL执行入口：python scripts/manage.py form-experiences")
     cases, standards, business, public = _validate_inputs(config)
     if case_limit is not None:
         if type(case_limit) is not int or not 1 <= case_limit <= len(cases):
@@ -152,13 +104,6 @@ def prepare(config_path, run_dir, *, case_limit=None):
             raise ValueError("--case-limit会截断多轮会话，请选择完整会话的结束位置")
         cases = cases[:case_limit]
         standards = {case["id"]: standards[case["id"]] for case in cases}
-    comparison_contexts = _comparison_contexts(
-        cases, standards, config["ground_truth"], business["data"]["baseline_dir"])
-    if config["comparison_version"] == COVERAGE_COMPARISON_VERSION:
-        from .coverage_evidence import build_coverage_contexts
-        comparison_contexts = build_coverage_contexts(
-            cases, standards, config["ground_truth"], business["data"]["baseline_dir"],
-            comparison_contexts)
     retrieval = RetrievalConfig.from_json(config["retrieval_config"])
     capacities = PoolConfig(**read_json(config["pool_config"]))
     if capacities.strategy != "adaptive":
@@ -243,7 +188,6 @@ def prepare(config_path, run_dir, *, case_limit=None):
     prepared = {"policy": POLICY, "run_id": "direct-" + uuid4().hex[:16],
                 "implementation_version": IMPLEMENTATION_VERSION,
                 "comparison_version": config["comparison_version"],
-                "comparison_contexts": comparison_contexts,
                 "namespace": config["namespace"], "data_version": config["data_version"],
                 "conditions": config["conditions"], "initial_state": config["initial_state"],
                 "business_config": str(run / "business.yaml"), "retrieval_config": str(run / "retrieval.json"),
@@ -314,21 +258,10 @@ def run_condition(run_dir, mode):
 
     run, config, cases = load_run(run_dir)
     comparison_version = config.get("comparison_version")
-    if comparison_version not in SUPPORTED_COMPARISON_VERSIONS:
+    if comparison_version != COMPARISON_VERSION:
         raise ValueError("运行目录采用其他评分口径且本程序不支持；旧结果保留，请创建新目录")
     if config.get("implementation_version") != IMPLEMENTATION_VERSION:
-        raise ValueError("运行目录由其他源码版本准备；请用dev_v0.1创建新目录")
-    contexts = config.get("comparison_contexts")
-    if not isinstance(contexts, dict) or set(contexts) != {case["id"] for case in cases}:
-        raise ValueError("运行目录缺少逐题辅助列核验依据；请创建新目录")
-    evaluator = evaluate_result
-    if comparison_version == COVERAGE_COMPARISON_VERSION:
-        from .coverage_comparison import evaluate_coverage_result, valid_coverage_evidence
-        evaluator = evaluate_coverage_result
-        for case in cases:
-            context = contexts[case["id"]]
-            if not valid_coverage_evidence(config["standards"][case["id"]], context):
-                raise ValueError("v3运行目录缺少冻结的补充字段核验依据；请创建新目录")
+        raise ValueError("运行目录由其他源码版本准备；请用当前源码创建新目录")
     if mode not in config["conditions"]:
         raise ValueError("该条件不在本轮配置中")
     folder, store = run / mode / "results", run / mode / "history.sqlite3"
@@ -361,13 +294,14 @@ def run_condition(run_dir, mode):
                 print("查询失败：" + type(error).__name__, file=sys.stderr, flush=True)
                 record = {"status": "failed", "operations": [], "result_query_id": None}
             expected = config["standards"][case["id"]]
-            result = evaluator(record, expected, context=contexts[case["id"]])
+            result = evaluate_result(record, expected, question=case["question"],
+                                     history=case["history"])
             row = {"case_id": case["id"], "condition": mode, "question": case["question"],
                    "query_id": result["query_id"], "sql": result["sql"],
                    "actual": result["actual"], "expected": expected, "verdict": result["verdict"]}
-            if comparison_version == COVERAGE_COMPARISON_VERSION:
-                row["comparison_version"] = comparison_version
-                row["comparison_reason"] = result["reason"]
+            row["comparison_version"] = comparison_version
+            row["comparison_reason"] = result["reason"]
+            row["comparison_alignment"] = result["alignment"]
             path = folder / (case["id"] + ".json")
             # 每题只写一次；PSU引用此不可变文件，但不导入其中的标准结果。
             with path.open("x", encoding="utf-8") as stream:

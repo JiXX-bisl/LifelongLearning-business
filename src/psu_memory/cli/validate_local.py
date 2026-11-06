@@ -1,4 +1,4 @@
-"""全自动SQL直接比较入口，无人工或LLM审核命令。"""
+"""按输出包含 expected 的准则运行验证并汇总记录。"""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ from ..validation.common import DEFAULT_CONFIG, MODES, load_cases, load_config
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="SQL直接比较与单题记录")
+    parser = argparse.ArgumentParser(description="expected结果包含评分与单题记录")
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("list-questions", "prepare"):
         command = commands.add_parser(name)

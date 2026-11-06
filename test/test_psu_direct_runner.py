@@ -20,8 +20,9 @@ from unittest.mock import Mock, patch
 import yaml
 
 from src.psu_memory.cli.validate_local import main
+from src.psu_memory.cli import rescore_values
 from src.psu_memory.validation import reporting, runner
-from src.psu_memory.validation.common import POLICY, read_json, write_json
+from src.psu_memory.validation.common import POLICY, load_config, read_json, write_json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,8 +41,6 @@ class DirectRunnerTests(unittest.TestCase):
         ]
         self.standards = {"q1": {"columns": ["value"], "rows": [[1]]},
                           "q2": {"columns": ["value"], "rows": [[2]]}}
-        self.comparison_contexts = {
-            case["id"]: {"enterprises": [], "amount_unit": "元"} for case in self.cases}
         self.public = [{"role": "user", "content": "当前数据基准日为2026-08-31。"}]
         self.baseline = self.root / "baseline"
         self.baseline.mkdir()
@@ -92,7 +91,6 @@ class DirectRunnerTests(unittest.TestCase):
             "policy": POLICY, "run_id": "fixture-run", "namespace": "direct-test",
             "implementation_version": runner.IMPLEMENTATION_VERSION,
             "comparison_version": runner.COMPARISON_VERSION,
-            "comparison_contexts": self.comparison_contexts,
             "data_version": "fixture-v1", "conditions": self.config["conditions"],
             "initial_state": "empty", "cases": self.cases, "standards": self.standards,
             "public_context": self.public, "business_config": str(self.business_path),
@@ -153,9 +151,9 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(saved["cases"], self.cases)
         self.assertEqual(saved["standards"], self.standards)
         self.assertEqual(saved["public_context"], self.public)
-        self.assertEqual(saved["implementation_version"], "dev_v0.1")
+        self.assertEqual(saved["implementation_version"], "dev_v1.1")
         self.assertEqual(saved["comparison_version"], runner.COMPARISON_VERSION)
-        self.assertEqual(saved["comparison_contexts"], self.comparison_contexts)
+        self.assertNotIn("comparison_contexts", saved)
         self.assertEqual(saved["pool_configs"]["fifo"]["strategy"], "fifo")
         copies = [(self.run / mode / "history.sqlite3").read_bytes() for mode in self.config["conditions"]]
         self.assertEqual(len(set(copies)), 1)
@@ -177,16 +175,12 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(loaded["standards"], self.standards)
         self.assertEqual({path.name: path.read_bytes() for path in (self.run / "inputs").iterdir()}, snapshots)
 
-    def test_prepare_freezes_private_enterprise_identity_context_from_static_data(self):
-        enterprises = [
-            {"enterprise_id": "E1", "enterprise_name": "甲公司", "industry": "不传入核验背景"},
-            {"enterprise_id": "E2", "enterprise_name": "乙公司", "industry": "不传入核验背景"},
-        ]
-        write_json(self.baseline / "tables.json", {"enterprise_basic": enterprises})
+    def test_prepare_needs_only_expected_without_supplemental_fact_tables(self):
         truth = read_json(self.truth_path)
         truth["cases"][0]["enterprise_ids"] = ["E1"]
         truth["cases"][1]["enterprise_ids"] = ["E2", "E1"]
         write_json(self.truth_path, truth)
+        self.assertFalse((self.baseline / "tables.json").exists())
 
         def initialize(path, **_):
             Path(path).write_bytes(b"mocked empty store")
@@ -196,52 +190,26 @@ class DirectRunnerTests(unittest.TestCase):
                 patch.object(runner, "_make_service", side_effect=AssertionError("prepare must not query")):
             runner.prepare(self.config_path, self.run)
         saved = read_json(self.run / "config.json")
-        first = {"enterprise_id": "E1", "enterprise_name": "甲公司"}
-        second = {"enterprise_id": "E2", "enterprise_name": "乙公司"}
-        expected = {"q1": {"enterprises": [first], "amount_unit": "元"},
-                    "q2": {"enterprises": [second, first], "amount_unit": "元"}}
-        self.assertEqual(saved["comparison_contexts"], expected)
+        self.assertNotIn("comparison_contexts", saved)
         self.assertEqual(saved["standards"], self.standards)
         self.assertEqual(saved["public_context"], self.public)
         self.assertEqual(saved["cases"], self.cases)
         self.assertFalse((self.run / "inputs" / "tables.json").exists())
-        self.assertNotIn("comparison_contexts", yaml.safe_load((self.run / "business.yaml").read_text()))
-        (self.baseline / "tables.json").unlink()
-        write_json(self.truth_path, {"cases": []})
-        self.assertEqual(runner.load_run(self.run)[1]["comparison_contexts"], expected)
+        self.assertNotIn("ground_truth", yaml.safe_load((self.run / "business.yaml").read_text()))
 
-    def test_missing_or_mismatched_enterprise_definitions_fail_before_store_preparation(self):
-        original_truth = read_json(self.truth_path)
-        valid = {"enterprise_id": "E1", "enterprise_name": "甲公司"}
-        tables_path = self.baseline / "tables.json"
+    def test_only_current_comparison_can_prepare_new_runs(self):
+        self.assertEqual(load_config(self.config_path)["comparison_version"], runner.COMPARISON_VERSION)
         with patch("src.psu_memory.integration.bootstrap.initialize_empty_store") as initialize, \
-                patch("src.psu_memory.integration.common.copy_database") as copy_store, \
-                patch.object(runner, "_set_completed") as mark_completed:
-            for problem in ("missing_file", "missing_id", "empty_name", "duplicate_id", "mismatched_name"):
-                with self.subTest(problem=problem):
-                    truth = deepcopy(original_truth)
-                    truth["cases"][0]["enterprise_ids"] = ["E1"]
-                    if problem == "mismatched_name":
-                        truth["cases"][0]["expected_result"] = {
-                            "columns": ["enterprise_name"], "rows": [["其他公司"]]}
-                    write_json(self.truth_path, truth)
-                    enterprises = [valid]
-                    if problem == "missing_id":
-                        enterprises = []
-                    elif problem == "empty_name":
-                        enterprises = [{**valid, "enterprise_name": ""}]
-                    elif problem == "duplicate_id":
-                        enterprises = [valid, valid]
-                    write_json(tables_path, {"enterprise_basic": enterprises})
-                    if problem == "missing_file":
-                        tables_path.unlink()
-                    run = self.root / problem
-                    with self.assertRaisesRegex(ValueError, "企业静态定义"):
-                        runner.prepare(self.config_path, run)
-                    self.assertFalse(run.exists())
+                patch.object(runner, "_set_completed") as completion:
+            for version in ("explicit_columns_aux_v2", "expected_coverage_v3", "expected_values_v4",
+                            "expected_subset_v1"):
+                with self.subTest(version=version):
+                    write_json(self.config_path, {**self.config, "comparison_version": version})
+                    with self.assertRaisesRegex(ValueError, "comparison_version"):
+                        runner.prepare(self.config_path, self.run)
+                    self.assertFalse(self.run.exists())
             initialize.assert_not_called()
-            copy_store.assert_not_called()
-            mark_completed.assert_not_called()
+            completion.assert_not_called()
 
     def test_case_limit_shares_questions_and_denominator_across_conditions(self):
         extra = {"id": "q3", "session": "another-session", "turn": 1,
@@ -265,7 +233,7 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(prepared["case_count"], 2)
         self.assertEqual(saved["cases"], self.cases)
         self.assertEqual(saved["standards"], self.standards)
-        self.assertEqual(saved["comparison_contexts"], self.comparison_contexts)
+        self.assertNotIn("comparison_contexts", saved)
         for mode in ("baseline", "fifo", "adaptive"):
             with self.subTest(mode=mode), self.runtime([
                     self.record("actual-q1", 1), self.record("actual-q2", 2)]) as runtime:
@@ -360,10 +328,10 @@ class DirectRunnerTests(unittest.TestCase):
         fake_python = binaries / "python"
         fake_python.write_text('#!/bin/sh\nprintf called > "$PSU_TEST_MARKER"\nexit 91\n', encoding="utf-8")
         fake_python.chmod(0o755)
-        environment = {**os.environ, "PSU_DIRECT_RUN": str(self.run), "PSU_TEST_MARKER": str(marker),
+        environment = {**os.environ, "PSU_VALUES_RUN": str(self.run), "PSU_TEST_MARKER": str(marker),
                        "PATH": str(binaries) + os.pathsep + os.environ.get("PATH", "")}
         result = subprocess.run(
-            ["bash", str(ROOT / "scripts/enterprise_query_bench/run_direct_sql_validation.sh")],
+            ["bash", str(ROOT / "scripts/enterprise_query_bench/run_values_sql_validation.sh")],
             env=environment, capture_output=True, text=True, timeout=10,
         )
         self.assertNotEqual(result.returncode, 0)
@@ -496,7 +464,11 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertNotIn(self.public[0], service.session_history)
         for case in self.cases:
             row = read_json(self.run / "baseline" / "results" / (case["id"] + ".json"))
-            self.assertEqual(set(row), {"case_id", "condition", "question", "query_id", "sql", "actual", "expected", "verdict"})
+            self.assertEqual(set(row), {"case_id", "condition", "question", "query_id", "sql",
+                                        "actual", "expected", "verdict", "comparison_version",
+                                        "comparison_reason", "comparison_alignment"})
+            self.assertEqual(row["comparison_version"], runner.COMPARISON_VERSION)
+            self.assertIsInstance(row["comparison_reason"], str)
         self.assertEqual({path.name for path in (self.run / "baseline").iterdir()}, {"history.sqlite3", "results"})
 
     def test_adaptive_updates_only_passed_sql_and_complete_group_is_not_requeried(self):
@@ -519,36 +491,38 @@ class DirectRunnerTests(unittest.TestCase):
         updater.close.assert_called_once()
         retriever.close.assert_called_once()
 
-    def test_submission_context_scores_reordered_helpers_and_updates_only_correct_identity(self):
+    def test_expected_values_in_arbitrary_layout_with_unverified_extras_pass_and_update(self):
         self.standards = {
-            "q1": {"columns": ["stat_month", "operating_revenue_yuan"], "rows": [["2026-08-01", 12]]},
-            "q2": {"columns": ["stat_month", "operating_revenue_yuan"], "rows": [["2026-08-01", 13]]},
-        }
-        self.comparison_contexts = {
-            "q1": {"enterprises": [{"enterprise_id": "E1", "enterprise_name": "甲公司"}], "amount_unit": "元"},
-            "q2": {"enterprises": [{"enterprise_id": "E2", "enterprise_name": "乙公司"}], "amount_unit": "元"},
+            "q1": {"columns": ["first", "second"], "rows": [[12, 14]]},
+            "q2": {"columns": ["first", "second"], "rows": [[13, 15]]},
         }
         records = [self.record("actual-q1", 12), self.record("actual-q2", 13)]
         for record, amount in zip(records, (12, 13)):
             record["operations"][0].update({
-                "columns": ["enterprise_name", "revenue", "month", "amount_unit", "enterprise_id"],
-                "rows": [["甲公司", amount, "2026-08", "元", "E1"]],
+                "sql": "SELECT arbitrary_results FROM independently_chosen_source",
+                "columns": ["arbitrary_label", "arbitrary_extra"],
+                "rows": [[amount + 2, "未经核验的额外文本"], [amount, 999]],
             })
         self.prepared_fixture()
-        with self.runtime(records) as runtime:
+        with self.runtime(records) as runtime, patch.object(
+                runner, "evaluate_result", wraps=runner.evaluate_result) as evaluate:
             result = runner.run_condition(self.run, "adaptive")
             updater, histories = runtime[2], runtime[6]
-        self.assertEqual((result["pass"], result["fail"]), (1, 1))
-        updater.apply.assert_called_once()
-        self.assertEqual(updater.apply.call_args.kwargs["query_id"], "actual-q1")
-        self.assertEqual(updater.apply.call_args.kwargs["case"], self.cases[0])
-        self.assertEqual(updater.apply.call_args.kwargs["record"], records[0])
+        self.assertEqual((result["pass"], result["fail"]), (2, 0))
+        self.assertEqual(evaluate.call_count, 2)
+        self.assertEqual([call.kwargs for call in evaluate.call_args_list], [
+            {"question": case["question"], "history": case["history"]} for case in self.cases])
+        self.assertEqual(updater.apply.call_count, 2)
+        self.assertEqual([call.kwargs["record"] for call in updater.apply.call_args_list], records)
         self.assertEqual(histories, [self.public, [*self.public, *self.cases[1]["history"]]])
-        for case_id, verdict in (("q1", "pass"), ("q2", "fail")):
+        for case_id in ("q1", "q2"):
             saved = read_json(self.run / "adaptive" / "results" / (case_id + ".json"))
-            self.assertEqual(saved["verdict"], verdict)
-            self.assertEqual(set(saved), {
-                "case_id", "condition", "question", "query_id", "sql", "actual", "expected", "verdict"})
+            self.assertEqual(saved["verdict"], "pass")
+            self.assertEqual(saved["comparison_version"], runner.COMPARISON_VERSION)
+            self.assertEqual(saved["comparison_reason"], "expected_values_included")
+            self.assertEqual(saved["comparison_alignment"]["layout"], "value_subset")
+            self.assertEqual(len(saved["comparison_alignment"]["cells"]), 2)
+            self.assertNotIn("comparison_contexts", saved)
 
     def test_fixed_retrieves_but_never_updates(self):
         self.prepared_fixture()
@@ -591,7 +565,8 @@ class DirectRunnerTests(unittest.TestCase):
                 patch.object(runner, "_set_completed") as mark_completed, \
                 patch.object(runner, "_make_service") as make_service, \
                 patch.object(reporting, "summarize") as summarize:
-            for version in (None, "explicit_columns_aux_v1", "obsolete-comparison"):
+            for version in (None, "explicit_columns_aux_v2", "expected_coverage_v3",
+                            "expected_values_v4", "expected_subset_v1", "obsolete-comparison"):
                 with self.subTest(version=version):
                     config = deepcopy(original)
                     if version is None:
@@ -611,6 +586,79 @@ class DirectRunnerTests(unittest.TestCase):
             mark_completed.assert_not_called()
             make_service.assert_not_called()
             summarize.assert_not_called()
+
+    def test_summary_rejects_mismatched_or_missing_current_scoring_metadata(self):
+        self.prepared_fixture()
+        with self.runtime([self.record("actual-q1", 1), self.record("actual-q2", 2)]):
+            runner.run_condition(self.run, "baseline")
+            path = self.run / "baseline" / "results" / "q1.json"
+            original = read_json(path)
+            for field in ("comparison_version", "comparison_reason", "comparison_alignment"):
+                with self.subTest(field=field):
+                    changed = deepcopy(original)
+                    changed.pop(field)
+                    write_json(path, changed)
+                    with self.assertRaisesRegex(ValueError, "评分版本"):
+                        reporting.summarize(self.run)
+            write_json(path, {**original, "comparison_version": "historical-version"})
+            with self.assertRaisesRegex(ValueError, "评分版本"):
+                reporting.summarize(self.run)
+
+    def test_historical_summary_preserves_saved_verdicts_without_reevaluation(self):
+        self.prepared_fixture()
+        with self.runtime([self.record("actual-q1", 1), self.record("actual-q2", 999)]):
+            runner.run_condition(self.run, "baseline")
+            config = read_json(self.run / "config.json")
+            config["comparison_version"] = "historical-version"
+            write_json(self.run / "config.json", config)
+            for path in (self.run / "baseline" / "results").glob("*.json"):
+                row = read_json(path)
+                row.pop("comparison_version")
+                row.pop("comparison_reason")
+                row.pop("comparison_alignment")
+                write_json(path, row)
+            before = {path: path.read_bytes() for path in self.run.rglob("*.json")}
+            with patch.object(runner, "evaluate_result", side_effect=AssertionError("summary must not score")):
+                summary = reporting.summarize(self.run)
+        self.assertEqual(summary["comparison_version"], "historical-version")
+        self.assertEqual((summary["conditions"]["baseline"]["pass"],
+                          summary["conditions"]["baseline"]["fail"]), (1, 1))
+        self.assertEqual({path: path.read_bytes() for path in self.run.rglob("*.json")}, before)
+
+    def test_rescore_uses_frozen_questions_and_history_and_preserves_source(self):
+        self.config["conditions"] = ["baseline"]
+        self.prepared_fixture()
+        config = read_json(self.run / "config.json")
+        config["comparison_version"] = "expected_subset_v1"
+        write_json(self.run / "config.json", config)
+        folder = self.run / "baseline" / "results"
+        folder.mkdir()
+        for case in self.cases:
+            write_json(folder / (case["id"] + ".json"), {
+                "case_id": case["id"], "condition": "baseline", "question": case["question"],
+                "actual": self.standards[case["id"]], "expected": self.standards[case["id"]],
+                "verdict": "fail", "comparison_version": "expected_subset_v1",
+                "comparison_reason": "missing_expected_values", "comparison_alignment": None,
+            })
+        before = {path: path.read_bytes() for path in self.run.rglob("*.json")}
+        # Changed live material must not alter the interpretation of an old run.
+        write_json(self.questions_path, {"cases": []})
+        write_json(self.truth_path, {"cases": []})
+        report_path = self.root / "rescore.json"
+        assessed = {"verdict": "pass", "reason": "expected_values_included",
+                    "alignment": {"layout": "value_subset", "cells": []}}
+        with patch.object(rescore_values, "assess_result", return_value=assessed) as assess:
+            rescore_values.rescore(self.run, report_path)
+        self.assertEqual([call.kwargs for call in assess.call_args_list], [
+            {"question": case["question"], "history": case["history"]} for case in self.cases])
+        self.assertEqual([call.args[1] for call in assess.call_args_list],
+                         [self.standards[case["id"]] for case in self.cases])
+        report = read_json(report_path)
+        self.assertEqual(report["comparison_version"], "expected_subset_v2")
+        self.assertEqual(report["source_comparison_version"], "expected_subset_v1")
+        self.assertIn("不构成新一轮在线实验", report["scope"])
+        self.assertEqual(report["conditions"]["baseline"]["transitions"], {"fail->pass": 2})
+        self.assertEqual({path: path.read_bytes() for path in self.run.rglob("*.json")}, before)
 
     def test_safely_rolled_back_update_failure_allows_the_next_case(self):
         from src.psu_memory.integration.direct_update import DirectUpdateError

@@ -1,9 +1,19 @@
-# Track source and configuration only. Everything else is ignored by default.
+# Track source, configuration and explicitly frozen stage archives only.
 *
 !/.gitignore
 !/.gitattributes
 !/README.md
 !/requirements*.txt
+!/docs/
+!/docs/psu_memory_结果包含评分.md
+!/docs/阶段总结_dev_v1.1.md
+
+!/archives/
+!/archives/dev_v1.1/
+!/archives/dev_v1.1/manifest.json
+!/archives/dev_v1.1/summary.json
+!/archives/dev_v1.1/subset-v2-rescore-20261106.json
+!/archives/dev_v1.1/stage1-evidence-20261106.zip
 
 !/src/
 !/src/**/

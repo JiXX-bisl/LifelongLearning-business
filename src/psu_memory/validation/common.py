@@ -7,11 +7,10 @@ from pathlib import Path
 from src.project_paths import resolve_project_path
 from ..integration.common import read_json, write_json
 from .comparison import COMPARISON_VERSION
-from .comparison_versions import SUPPORTED_COMPARISON_VERSIONS
 
 MODES = ("baseline", "fifo", "adaptive", "fixed")
 POLICY = "sql_result_direct_v1"
-DEFAULT_CONFIG = "configs/validation/enterprise_v30_120_v1_0_2_natural_direct_v1.json"
+DEFAULT_CONFIG = "configs/validation/enterprise_v30_120_v1_0_2_natural_values.json"
 
 
 def load_public_context(path, *, data_version=None):
@@ -68,8 +67,8 @@ def load_config(path=DEFAULT_CONFIG):
     if value.get("policy") != POLICY:
         raise ValueError("仅支持sql_result_direct_v1，请使用新的直接比较配置")
     config = deepcopy(value)
-    if config.setdefault("comparison_version", COMPARISON_VERSION) not in SUPPORTED_COMPARISON_VERSIONS:
-        raise ValueError("不支持的comparison_version；请使用已支持版本并准备新运行目录")
+    if config.setdefault("comparison_version", COMPARISON_VERSION) != COMPARISON_VERSION:
+        raise ValueError("仅支持当前comparison_version；请使用结果包含准则并准备新运行目录")
     conditions = config.get("conditions", ["baseline", "fifo", "adaptive"])
     if (not isinstance(conditions, list) or not conditions
             or len(set(conditions)) != len(conditions)

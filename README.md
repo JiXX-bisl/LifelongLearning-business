@@ -1,5 +1,7 @@
 # 企业风险大模型 / LifelongLearning-business
 
+**阶段固定版本：分支 `dev_v1.1`，固定标签 `dev_v1.1-20261106`。** 当前评分为 `expected_subset_v2`，完成第一阶段三组 216 回合对比及已有结果重评。阶段总结、材料版本和结果解释见 [dev_v1.1 阶段总结](docs/阶段总结_dev_v1.1.md)，归档清单见 [archives/dev_v1.1/manifest.json](archives/dev_v1.1/manifest.json)。
+
 企业查询与 PSU 经验检索、更新的实验代码。当前处于第一阶段验证：比较 baseline（无经验）、FIFO（容量 18）和 adaptive（四组各 8，总容量 32）。FIFO 与 adaptive 从相同的 18 条已复核种子开始，容量差异为当前实验设定。
 
 当前题库为 `enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded`：60 道经验形成题、72 道测试题，另有 2 道澄清题排除在 SQL 验证之外。公共提示为精简 v3，模型需根据自然、较模糊的提问自行选择核心数据。
@@ -8,12 +10,18 @@
 
 Windows 使用者按第 1～6 节中的 **Windows / PowerShell** 步骤操作：Conda/CUDA → 模型与材料 → CUDA 种子索引 → 原生 MySQL 与数据库验收 → API → 离线测试和实际验证。首次安装完成后的启动方式见第 6 节“Windows 日常运行”。
 
+## 阶段结果归档
+
+本阶段的结果和来源配置归档为 [stage1-evidence-20261106.zip](https://github.com/JiXX-bisl/LifelongLearning-business/raw/refs/tags/dev_v1.1-20261106/archives/dev_v1.1/stage1-evidence-20261106.zip)。[归档清单](archives/dev_v1.1/manifest.json)记录文件校验信息，[结果汇总](archives/dev_v1.1/summary.json)和 [v2 重评报告](archives/dev_v1.1/subset-v2-rescore-20261106.json)可直接阅读。
+
+下载 ZIP 后解压到一个新建的独立目录，具体命令见[阶段总结中的归档说明](docs/阶段总结_dev_v1.1.md#5-归档与证据范围)。归档中的原绝对路径仅作为历史来源记录；原始输入包及运行配置中的旧评分或状态元数据保留其封存时点的含义，当前代码评分版本以 `expected_subset_v2` 为准。
+
 ## 1. 环境与依赖
 
 macOS / Linux 在终端执行：
 
 ```bash
-git clone --branch dev_v0.1 https://github.com/JiXX-bisl/LifelongLearning-business.git
+git clone --branch dev_v1.1 https://github.com/JiXX-bisl/LifelongLearning-business.git
 cd LifelongLearning-business
 python3.11 -m venv .venv
 source .venv/bin/activate
@@ -42,7 +50,7 @@ python -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl
 if ($LASTEXITCODE -ne 0) { throw 'CUDA PyTorch 安装失败。' }
 python -m pip install -r requirements-windows-cuda.txt
 if ($LASTEXITCODE -ne 0) { throw 'Windows 依赖安装失败。' }
-python -B scripts/check_windows_runtime.py
+python -B scripts/manage.py windows-check
 if ($LASTEXITCODE -ne 0) { throw 'Windows/CUDA 环境检查失败。' }
 ```
 
@@ -54,10 +62,8 @@ Windows 新增配置：
 | 正式 PSU 检索 | `src/psu_memory/retrieval/retrieval_config.windows_cuda.json` |
 | 模型下载参数；通用推理工具另需额外依赖 | `configs/embedding/bge_m3_windows_cuda.yaml` |
 | 原生 MySQL 配置模板 | `configs/mysql/my.windows.ini`，运行副本放在纯英文路径，见第 4 节 |
-| 三组 v3 验证 | `configs/validation/enterprise_v30_120_v1_0_2_natural_coverage_v3_windows_cuda.json` |
-| 三组 v2 验证 | `configs/validation/enterprise_v30_120_v1_0_2_natural_direct_v1_windows_cuda.json` |
-| baseline 前 3 题 | `configs/validation/enterprise_v30_120_v1_0_2_natural_baseline3_v1_windows_cuda.json` |
-| 通用业务查询（冷启动） | `configs/business/psu_query_v30_120_windows_cuda.json`，通过 `scripts/run_business_query.py --psu-config` 指定 |
+| 三组验证 | `configs/validation/enterprise_v30_120_v1_0_2_natural_values_windows_cuda.json` |
+| 通用业务查询（冷启动） | `configs/business/psu_query_v30_120_windows_cuda.json`，通过 `scripts/manage.py query --psu-config` 指定 |
 
 Windows 验证配置预留独立种子路径 `data/derived/psu_memory/seeds/windows-cuda/seed.sqlite3` 和本机验收报告 `data/reports/enterprise_v30_120/database_acceptance_windows.json`。
 
@@ -74,7 +80,7 @@ revision：5617a9f61b028005a4858fdac845db406aefb181
 macOS / Linux 完成通用 embedding 依赖安装后：
 
 ```bash
-python scripts/check_embedding.py --device cpu --download-only
+python scripts/manage.py embedding --device cpu --download-only
 ```
 
 ### Windows 下载模型
@@ -99,11 +105,18 @@ Windows 在项目根目录安装：
 $archive = Join-Path (Get-Location).Path 'downloads\enterprise-v030-v1.0.2-inputs-20261020.zip'
 if (!(Test-Path -LiteralPath $archive -PathType Leaf)) { throw '缺少 ZIP 文件。' }
 if (!(Test-Path -LiteralPath "$archive.sha256" -PathType Leaf)) { throw '缺少 SHA256 文件。' }
-python -B scripts/enterprise_query_bench/install_reproduction_inputs.py --archive $archive
+python -B scripts/manage.py install-inputs --archive $archive
 if ($LASTEXITCODE -ne 0) { throw '材料安装失败，请停止，不要复制种子或重建索引。' }
 ```
 
-macOS / Linux 可使用同一 Python 安装脚本和 `--archive` 参数。。
+macOS / Linux 在项目根目录安装：
+
+```bash
+python -B scripts/manage.py install-inputs \
+  --archive downloads/enterprise-v030-v1.0.2-inputs-20261020.zip
+```
+
+安装程序读取同目录的 `.zip.sha256` 校验文件；安装成功后继续准备数据库。
 
 
 ### Windows 复制种子并重建 CUDA 索引
@@ -149,11 +162,11 @@ mysql -h 127.0.0.1 -P 3306 -u root -p synthetic_enterprise_v30_120 \
 
 ```bash
 export ENTERPRISE_MYSQL_PASSWORD='替换为本机数据库账号密码'
-python scripts/sql/build_enterprise_dataset_v30.py import \
+python scripts/manage.py data import \
   --baseline-dir data/sql/synthetic_enterprise_v30_120_v1.0.2 \
   --host 127.0.0.1 --port 3306 --user synthetic \
   --report data/reports/enterprise_v30_120/database_import_local.json
-python scripts/sql/build_enterprise_dataset_v30.py accept \
+python scripts/manage.py data accept \
   --baseline-dir data/sql/synthetic_enterprise_v30_120_v1.0.2 \
   --private-dir data/evaluation/synthetic_enterprise_v30_120_v1.0.2 \
   --host 127.0.0.1 --port 3306 --user synthetic \
@@ -315,7 +328,7 @@ Remove-Variable mysqlPassword
 先导入，成功后再验收：
 
 ```powershell
-python -B scripts/sql/build_enterprise_dataset_v30.py import `
+python -B scripts/manage.py data import `
     --baseline-dir data/sql/synthetic_enterprise_v30_120_v1.0.2 `
     --host 127.0.0.1 --port 3306 --user synthetic `
     --report data/reports/enterprise_v30_120/database_import_windows.json
@@ -323,7 +336,7 @@ if ($LASTEXITCODE -ne 0) { throw '数据导入失败，请停止后续步骤。'
 ```
 
 ```powershell
-python -B scripts/sql/build_enterprise_dataset_v30.py accept `
+python -B scripts/manage.py data accept `
     --baseline-dir data/sql/synthetic_enterprise_v30_120_v1.0.2 `
     --private-dir data/evaluation/synthetic_enterprise_v30_120_v1.0.2 `
     --host 127.0.0.1 --port 3306 --user synthetic `
@@ -353,30 +366,69 @@ $env:OPENAI_MODEL_NAME = '替换为服务商实际可用的模型名称'
 
 ## 6. 独立测试与正式运行
 
-当前新评分版本为 **`expected_coverage_v3`**，由使用者先运行独立测试（模拟远程模型和 embedding，部分测试写入临时 SQLite）：
+当前唯一评分版本为 **`expected_subset_v2`**：输出完整包含本题必需结果即 PASS，必要结果缺失或不匹配才 FAIL。题目明确指定统计月份时，无需重复输出已知的业务月份数；需要查询确定的报送月份数、税额已知月份数等仍须输出。B2 税款状态认可本题中含义一致的文字与数值表示。SQL、查询对象、列名、行列布局和额外输出均不影响判定；额外输出是否正确也不检查。必要值仍按出现次数匹配，每个实际单元格只使用一次。原始 ground_truth 和历史记录保留，规则及历史结果重评见 [结果包含评分](docs/psu_memory_结果包含评分.md)。
+
+`test/` 仅保留评分准则验证 `test_psu_submission_comparison.py`、实验流程验证 `test_psu_direct_runner.py`，以及手动模型连通性工具 `test_llm.py`。下面的 macOS 和 Windows 测试入口只运行前两个文件，外部服务使用模拟对象；`test_llm.py` 由使用者按需单独执行。
+
+使用者先运行核心验证。macOS：
 
 ```bash
-bash scripts/enterprise_query_bench/run_coverage_sql_tests.sh
+bash scripts/enterprise_query_bench/run_values_sql_tests.sh
 ```
 
 准备好依赖、权重、数据、种子、API 和本机验收报告后，进行小范围运行，默认三组各 10 题：
 
 ```bash
-unset PSU_COVERAGE_RUN
-bash scripts/enterprise_query_bench/run_coverage_sql_validation.sh
+unset PSU_VALUES_RUN
+bash scripts/enterprise_query_bench/run_values_sql_validation.sh
 ```
 
 完整 72 题测试分区，三组共 216 回合：
 
+```bash
+unset PSU_VALUES_RUN
+PSU_VALUES_CASE_LIMIT=72 bash scripts/enterprise_query_bench/run_values_sql_validation.sh
+```
+
+Windows 日常运行：使用前文已激活的 `lifelonglearning` 环境、CUDA 种子和 Windows 数据验收报告。在项目根目录执行：
+
+```powershell
+.\scripts\enterprise_query_bench\run_values_sql_tests.ps1
+Remove-Item Env:PSU_VALUES_RUN -ErrorAction SilentlyContinue
+.\scripts\enterprise_query_bench\run_values_sql_validation.ps1 -CaseLimit 72
+```
+
+每次运行创建 `natural-v030-subset-v2-...` 新目录。工程只保留上述当前评分入口；历史实验记录、报告和固定发行材料原样保留。测试、离线重评和实际运行由使用者执行。
 
 ## 7. 代码入口
 
+`scripts/` 保留 4 个日常入口、1 个统一管理入口和 3 个来源兼容脚本。第 6 节的 macOS / Windows 测试与运行命令保持不变；安装、数据准备及维护统一使用 `python -B scripts/manage.py <命令> [参数]`。
+
+| 命令 | 用途 |
+| --- | --- |
+| `embedding` | 下载或检查 BGE-M3 模型 |
+| `windows-check` | 检查 Windows / CUDA 环境 |
+| `install-inputs` | 校验并安装实验输入包 |
+| `data` | 数据 `generate`、`validate`、`import`、`accept` |
+| `query` / `check-query` | 普通业务查询 / 检查查询启动条件 |
+| `package-inputs` | 打包固定实验输入 |
+| `verify-reference` | 核验当前题库参考结果 |
+| `form-experiences` | 执行预编写 SQL 形成经验 |
+| `initialize-seeds` / `review-seeds` | 初始化共同种子 / 应用已确认的难度复核 |
+| `rescore` | 从历史 JSON 生成新的评分报告 |
+
+运行 `python -B scripts/manage.py --help` 查看命令，运行 `python -B scripts/manage.py <命令> --help` 查看对应参数。统一入口只加载指定命令，不指定命令时不会自动执行安装或维护。
+
+以下 3 个脚本保留原路径和内容，用于已发布材料的来源哈希校验：`scripts/enterprise_query_bench/publish_v30_120_natural_review.py`、`scripts/enterprise_query_bench/apply_seed_difficulty_review.py`、`scripts/sql/build_enterprise_dataset_v30.py`。这些原件不能删除或改写；新的操作使用上述统一入口。
+
 | 路径 | 内容 |
 | --- | --- |
+| `src/cli/` | 安装、查询、打包和维护命令实现，以及 Windows 日常入口实现 |
 | `src/chatflow_agent/` | 通用企业查询、数据库接入和公共提示 |
 | `src/psu_memory/retrieval/` | BGE-M3 编码、向量索引、经验检索和选择 |
 | `src/psu_memory/pool/` | FIFO / adaptive 经验成员维护及难度标注 |
-| `src/psu_memory/validation/` | 实验准备、核心/补充结果比较、事实冻结和汇总 |
-| `scripts/enterprise_query_bench/` | 测试、运行、形成题、种子初始化和已有结果诊断入口 |
+| `src/psu_memory/validation/` | 实验准备、预期结果包含比较和汇总 |
+| `scripts/manage.py` | 安装、数据准备及维护的统一入口 |
+| `scripts/enterprise_query_bench/run_values_sql_*` | macOS / Windows 核心测试与三组实验入口 |
 | `configs/validation/` | 题库、种子路径、评分版本和实验条件 |
-| `test/` | 使用者执行的独立测试 |
+| `test/` | 两个核心验证及手动 `test_llm.py` |

@@ -1,0 +1,790 @@
+{
+  "version": "stage1_validation_summary_v1",
+  "stage": "dev_v1.1",
+  "frozen_date": "2026-11-06",
+  "source_run": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106",
+  "source_report": "data/reports/psu_memory/subset-v2-rescore-20261106.json",
+  "original_online_comparison_version": "expected_subset_v1",
+  "rescored_comparison_version": "expected_subset_v2",
+  "scope": "汇总已保存的原始判定与离线重评判定；未调用评分器，未重放模型查询或在线经验更新。",
+  "original_online": {
+    "baseline": {
+      "total": 72,
+      "pass": 27,
+      "fail": 45,
+      "pass_rate": 0.375,
+      "completed": true
+    },
+    "fifo": {
+      "total": 72,
+      "pass": 28,
+      "fail": 44,
+      "pass_rate": 0.3888888888888889,
+      "completed": true
+    },
+    "adaptive": {
+      "total": 72,
+      "pass": 41,
+      "fail": 31,
+      "pass_rate": 0.5694444444444444,
+      "completed": true
+    }
+  },
+  "offline_rescore": {
+    "baseline": {
+      "total": 72,
+      "pass": 31,
+      "fail": 41,
+      "pass_rate": 0.4305555555555556,
+      "completed": true
+    },
+    "fifo": {
+      "total": 72,
+      "pass": 31,
+      "fail": 41,
+      "pass_rate": 0.4305555555555556,
+      "completed": true
+    },
+    "adaptive": {
+      "total": 72,
+      "pass": 46,
+      "fail": 26,
+      "pass_rate": 0.6388888888888888,
+      "completed": true
+    }
+  },
+  "transitions_by_condition": {
+    "baseline": {
+      "pass->pass": 27,
+      "fail->fail": 41,
+      "fail->pass": 4
+    },
+    "fifo": {
+      "pass->pass": 28,
+      "fail->fail": 41,
+      "fail->pass": 3
+    },
+    "adaptive": {
+      "pass->pass": 41,
+      "fail->fail": 26,
+      "fail->pass": 5
+    }
+  },
+  "changed_results": 12,
+  "changed_unique_cases": 6,
+  "changes": [
+    {
+      "condition": "baseline",
+      "case_id": "B2-L3-01-E2",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "actual": [
+              1,
+              0
+            ]
+          },
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              1,
+              1
+            ]
+          },
+          {
+            "expected": [
+              0,
+              2
+            ],
+            "actual": [
+              1,
+              2
+            ]
+          },
+          {
+            "expected": [
+              0,
+              3
+            ],
+            "actual": [
+              1,
+              3
+            ],
+            "match": "tax_status_equivalent"
+          },
+          {
+            "expected": [
+              1,
+              0
+            ],
+            "actual": [
+              0,
+              0
+            ]
+          },
+          {
+            "expected": [
+              1,
+              1
+            ],
+            "actual": [
+              0,
+              1
+            ]
+          },
+          {
+            "expected": [
+              1,
+              2
+            ],
+            "actual": [
+              0,
+              2
+            ]
+          },
+          {
+            "expected": [
+              1,
+              3
+            ],
+            "actual": [
+              0,
+              3
+            ],
+            "match": "tax_status_equivalent"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "baseline",
+      "case_id": "B3-L2-01-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              0,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 1,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "baseline",
+      "case_id": "B3-L2-02-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              3,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 3,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "baseline",
+      "case_id": "B3-L2-02-E2",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              3,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 3,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "fifo",
+      "case_id": "B3-L2-01-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              0,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 1,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "fifo",
+      "case_id": "B3-L2-01-E2",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              0,
+              2
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 1,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "fifo",
+      "case_id": "B3-L2-02-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              3,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 3,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "adaptive",
+      "case_id": "B2-L3-01-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "actual": [
+              1,
+              0
+            ]
+          },
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              1,
+              1
+            ]
+          },
+          {
+            "expected": [
+              0,
+              2
+            ],
+            "actual": [
+              1,
+              2
+            ]
+          },
+          {
+            "expected": [
+              0,
+              3
+            ],
+            "actual": [
+              1,
+              3
+            ],
+            "match": "tax_status_equivalent"
+          },
+          {
+            "expected": [
+              1,
+              0
+            ],
+            "actual": [
+              0,
+              0
+            ]
+          },
+          {
+            "expected": [
+              1,
+              1
+            ],
+            "actual": [
+              0,
+              1
+            ]
+          },
+          {
+            "expected": [
+              1,
+              2
+            ],
+            "actual": [
+              0,
+              2
+            ]
+          },
+          {
+            "expected": [
+              1,
+              3
+            ],
+            "actual": [
+              0,
+              3
+            ],
+            "match": "tax_status_equivalent"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "adaptive",
+      "case_id": "B2-L3-01-E2",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "actual": [
+              1,
+              0
+            ]
+          },
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              1,
+              1
+            ]
+          },
+          {
+            "expected": [
+              0,
+              2
+            ],
+            "actual": [
+              1,
+              2
+            ]
+          },
+          {
+            "expected": [
+              0,
+              3
+            ],
+            "actual": [
+              1,
+              3
+            ],
+            "match": "tax_status_equivalent"
+          },
+          {
+            "expected": [
+              1,
+              0
+            ],
+            "actual": [
+              0,
+              0
+            ]
+          },
+          {
+            "expected": [
+              1,
+              1
+            ],
+            "actual": [
+              0,
+              1
+            ]
+          },
+          {
+            "expected": [
+              1,
+              2
+            ],
+            "actual": [
+              0,
+              2
+            ]
+          },
+          {
+            "expected": [
+              1,
+              3
+            ],
+            "actual": [
+              0,
+              3
+            ],
+            "match": "tax_status_equivalent"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "adaptive",
+      "case_id": "B3-L2-01-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              0,
+              3
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 1,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "adaptive",
+      "case_id": "B3-L2-02-E1",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              3,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 3,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "adaptive",
+      "case_id": "B3-L2-02-E2",
+      "old_verdict": "fail",
+      "verdict": "pass",
+      "old_reason": "missing_expected_values",
+      "comparison_reason": "expected_values_included",
+      "comparison_alignment": {
+        "layout": "value_subset",
+        "cells": [
+          {
+            "expected": [
+              0,
+              1
+            ],
+            "actual": [
+              3,
+              1
+            ]
+          }
+        ],
+        "omitted_known_inputs": [
+          {
+            "expected": [
+              0,
+              0
+            ],
+            "value": 3,
+            "reason": "month_count_given_in_question"
+          }
+        ]
+      }
+    }
+  ],
+  "category_results": [
+    {
+      "category": "A1",
+      "total_per_condition": 8,
+      "pass": {
+        "baseline": 0,
+        "fifo": 0,
+        "adaptive": 0
+      }
+    },
+    {
+      "category": "A2",
+      "total_per_condition": 6,
+      "pass": {
+        "baseline": 6,
+        "fifo": 6,
+        "adaptive": 6
+      }
+    },
+    {
+      "category": "A4",
+      "total_per_condition": 6,
+      "pass": {
+        "baseline": 6,
+        "fifo": 6,
+        "adaptive": 6
+      }
+    },
+    {
+      "category": "A5",
+      "total_per_condition": 4,
+      "pass": {
+        "baseline": 1,
+        "fifo": 2,
+        "adaptive": 2
+      }
+    },
+    {
+      "category": "B2",
+      "total_per_condition": 7,
+      "pass": {
+        "baseline": 4,
+        "fifo": 6,
+        "adaptive": 6
+      }
+    },
+    {
+      "category": "B3",
+      "total_per_condition": 8,
+      "pass": {
+        "baseline": 4,
+        "fifo": 4,
+        "adaptive": 5
+      }
+    },
+    {
+      "category": "C1",
+      "total_per_condition": 4,
+      "pass": {
+        "baseline": 0,
+        "fifo": 0,
+        "adaptive": 0
+      }
+    },
+    {
+      "category": "C2",
+      "total_per_condition": 12,
+      "pass": {
+        "baseline": 0,
+        "fifo": 0,
+        "adaptive": 6
+      }
+    },
+    {
+      "category": "C4",
+      "total_per_condition": 12,
+      "pass": {
+        "baseline": 5,
+        "fifo": 2,
+        "adaptive": 11
+      }
+    },
+    {
+      "category": "C6",
+      "total_per_condition": 5,
+      "pass": {
+        "baseline": 5,
+        "fifo": 5,
+        "adaptive": 4
+      }
+    }
+  ],
+  "pairwise_offline_rescore": [
+    {
+      "from": "baseline",
+      "to": "fifo",
+      "transitions": {
+        "fail->fail": 38,
+        "fail->pass": 3,
+        "pass->fail": 3,
+        "pass->pass": 28
+      },
+      "net_pass_gain": 0,
+      "pass_rate_difference_percentage_points": 0.0
+    },
+    {
+      "from": "baseline",
+      "to": "adaptive",
+      "transitions": {
+        "fail->fail": 25,
+        "fail->pass": 16,
+        "pass->fail": 1,
+        "pass->pass": 30
+      },
+      "net_pass_gain": 15,
+      "pass_rate_difference_percentage_points": 20.833333333333332
+    },
+    {
+      "from": "fifo",
+      "to": "adaptive",
+      "transitions": {
+        "fail->fail": 24,
+        "fail->pass": 17,
+        "pass->fail": 2,
+        "pass->pass": 29
+      },
+      "net_pass_gain": 15,
+      "pass_rate_difference_percentage_points": 20.833333333333332
+    }
+  ],
+  "interpretation": "adaptive 在本轮已确认条件下比 baseline、FIFO 各多通过 15/72 题，领先 20.83 个百分点。原在线经验演化由 expected_subset_v1 判定产生，v2 重评不构成新的在线实验；剩余 FAIL 需要按遗漏、口径、范围或提交等原因区分。"
+}

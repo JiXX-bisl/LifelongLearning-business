@@ -1,499 +1,332 @@
-"""Submission comparison contracts; execution is reserved for the user."""
+"""Expected-value inclusion and the completed-submission protocol."""
 from copy import deepcopy
 from decimal import Decimal, localcontext
 
 import pytest
 
 from src.psu_memory.validation.comparison import (
-    compare_results,
-    compare_submission_results,
-    evaluate_result,
+    COMPARISON_VERSION, assess_result, compare_results,
+    compare_submission_results, evaluate_result,
 )
 
 
-SINGLE_ENTERPRISE = {
-    "enterprises": [{"enterprise_id": "E1", "enterprise_name": "甲公司"}],
-    "amount_unit": "元",
-}
-TWO_ENTERPRISES = {
-    "enterprises": [
-        {"enterprise_id": "E1", "enterprise_name": "甲公司"},
-        {"enterprise_id": "E2", "enterprise_name": "乙公司"},
-    ],
-    "amount_unit": "元",
-}
+def result(rows, columns=None):
+    return {"columns": ["value"] if columns is None else columns, "rows": rows}
 
 
-def result(columns, rows):
-    return {"columns": columns, "rows": rows}
+def operation(query_id="submitted", rows=None, **changes):
+    value = {
+        "kind": "sql", "query_id": query_id, "sql": "SELECT 1",
+        "success": True, "is_complete": True,
+        "columns": ["arbitrary_name"], "rows": [[1]] if rows is None else rows,
+    }
+    value.update(changes)
+    return value
 
 
-def test_explicit_column_reordering_does_not_change_reference_verification():
-    actual = result(["net_profit_yuan", "stat_month"], [[12, "2026-08-01"]])
-    expected = result(["stat_month", "net_profit_yuan"], [["2026-08-01", 12]])
+def record(*operations, query_id="submitted", status="completed"):
+    return {"status": status, "result_query_id": query_id, "operations": list(operations)}
+
+
+def test_only_expected_subset_version_is_active():
+    assert COMPARISON_VERSION == "expected_subset_v2"
+
+
+def test_column_names_positions_and_rows_do_not_gate_inclusion():
+    expected = result([[1, 2], [3, 4]], ["first", "second"])
+    for actual in (
+        result([[4, 1], [2, 3]], ["unrelated", "unrelated"]),
+        result([[4], [1], [3], [2]]),
+        result([[3, 1, 4, 2]], ["a", "b", "c", "d"]),
+    ):
+        assert compare_submission_results(actual, expected)
+    assert not compare_results(result([[4, 1], [2, 3]], ["a", "b"]), expected)
+
+
+@pytest.mark.parametrize("extra", [
+    999999, -123, "incorrect company", "wrong unit", "unrecognized label", None,
+    float("nan"), float("inf"), Decimal("NaN"), "Infinity", {"unknown": 1},
+])
+def test_any_extra_value_is_ignored_even_if_wrong_or_not_a_supported_scalar(extra):
+    actual = result([[12, extra]], ["anything", "anything"])
+    assert compare_submission_results(actual, result([[12]], ["net_profit_yuan"]))
+
+
+def test_extra_duplicate_rows_and_business_columns_do_not_fail():
+    expected = result([[12]])
+    actual = result([[12, 999], [12, 999], [88, 77]], ["a", "b"])
     assert compare_submission_results(actual, expected)
-    assert not compare_results(actual, expected)
 
 
-@pytest.mark.parametrize(
-    "month_name", ["stat_month", "month", "month_label", "stat_month_label", "月份"])
-@pytest.mark.parametrize(
-    "revenue_name",
-    ["operating_revenue_yuan", "operating_revenue", "monthly_revenue_yuan",
-     "revenue", "营业收入", "该月收入"],
-)
-def test_fixed_aliases_support_explicit_reordering(month_name, revenue_name):
-    actual = result([revenue_name, month_name], [["12.00", "2026-08-01"]])
-    expected = result(["stat_month", "operating_revenue_yuan"], [["2026-08-01", 12]])
-    assert compare_submission_results(actual, expected)
+def test_required_occurrences_each_need_a_separate_actual_cell():
+    expected = result([[0, 0, 2]], ["a", "b", "c"])
+    assert not compare_submission_results(result([[0, 2]], ["a", "b"]), expected)
+    assert compare_submission_results(result([[0], [2], [0], [0]]), expected)
+    evaluated = assess_result(result([[0], [2], [0], [0]]), expected)
+    cells = evaluated["alignment"]["cells"]
+    assert len(cells) == 3
+    assert len({tuple(pair["actual"]) for pair in cells}) == 3
 
 
-@pytest.mark.parametrize(
-    ("actual_name", "expected_name"),
-    [("净利润", "net_profit_yuan"), ("该月净利润", "net_profit_yuan"),
-     ("当月净利润", "net_profit_yuan"),
-     ("税额", "tax_amount_yuan"), ("tax_amount", "tax_amount_yuan")],
-)
-def test_fixed_measure_aliases(actual_name, expected_name):
-    assert compare_submission_results(result([actual_name], [[12]]),
-                                      result([expected_name], [["12.00"]]))
+@pytest.mark.parametrize("actual", [result([]), result([[11]]), result([[1], [2]])])
+def test_missing_or_different_expected_value_fails_without_computing_it(actual):
+    assert assess_result(actual, result([[12]])) == {
+        "verdict": "fail", "reason": "missing_expected_values", "alignment": None,
+    }
 
 
-@pytest.mark.parametrize("suffix", ["_元", "(元)", "（元）", "_yuan", " (元)", " （元）"])
-@pytest.mark.parametrize(
-    ("measure", "canonical"),
-    [("营业收入", "operating_revenue_yuan"),
-     ("operating_revenue", "operating_revenue_yuan"),
-     ("net_profit_yuan", "net_profit_yuan"),
-     ("当月净利润", "net_profit_yuan"),
-     ("税额", "tax_amount_yuan"),
-     ("未偿本金", "outstanding_principal_yuan"),
-     ("季度累计净利润", "quarter_net_profit_yuan"),
-     ("期间收入合计", "period_revenue_yuan")],
-)
-def test_explicit_yuan_suffixes_work_with_reordering_and_valid_helpers(
-        measure, canonical, suffix):
-    actual = result(
-        ["企业名称", measure + suffix, "单位", "stat_month_label"],
-        [["甲公司", "12.0000", "元", "2026-08"]],
-    )
-    expected = result(["stat_month", canonical], [["2026-08-01", "12.00"]])
-    before = deepcopy((actual, expected))
-    assert compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-    assert (actual, expected) == before
-
-
-@pytest.mark.parametrize(
-    ("alias", "canonical"),
-    [("营业收入_元", "operating_revenue_yuan"),
-     ("营业收入 (元)", "operating_revenue_yuan"),
-     ("当月净利润_元", "net_profit_yuan"),
-     ("净利润_元", "net_profit_yuan"),
-     ("净利润 （元）", "net_profit_yuan")],
-)
-def test_same_unit_alias_passes_with_or_without_allowed_enterprise_column(alias, canonical):
-    expected = result(["stat_month", canonical], [["2026-08-01", "12.00"]])
-    without_helper = result(["月份", alias], [["2026-08", "12.00"]])
-    with_helper = result(
-        ["企业名称", "月份", alias], [["甲公司", "2026-08", "12.00"]])
-    assert compare_submission_results(without_helper, expected)
-    assert compare_submission_results(with_helper, expected, context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize(
-    ("actual_columns", "measure", "month_count"),
-    [
-        pytest.param(
-            ["企业名称", "月份", "当月净利润_元"], "net_profit_yuan", 3,
-            id="fifo-C6-L1-S02-T1"),
-        pytest.param(
-            ["企业名称", "月份", "净利润_元"], "net_profit_yuan", 2,
-            id="fifo-C6-L1-S02-T2"),
-        pytest.param(
-            ["企业名称", "月份", "净利润_元"], "net_profit_yuan", 4,
-            id="fifo-C6-L1-S02-T3"),
-        pytest.param(
-            ["企业名称", "月份", "营业收入_元"], "operating_revenue_yuan", 1,
-            id="adaptive-A4-L1-01"),
-        pytest.param(
-            ["enterprise_name", "月份", "净利润_元"], "net_profit_yuan", 3,
-            id="adaptive-C6-L1-S02-T1"),
-        pytest.param(
-            ["企业名称", "企业编号", "月份", "净利润_元"], "net_profit_yuan", 4,
-            id="adaptive-C6-L1-S02-T3"),
-    ],
-)
-def test_six_observed_false_fail_layouts_use_self_contained_fixtures(
-        actual_columns, measure, month_count):
-    # Preserve the six observed column layouts, using synthetic values and entity
-    # context so these regressions do not depend on local experiment artifacts.
-    actual_rows = []
-    expected_rows = []
-    for month, value in [("2026-04", "-12.00"), ("2026-05", "-15.00"),
-                         ("2026-06", "-18.00"), ("2026-07", "20.00")][:month_count]:
-        fields = {
-            "企业名称": "甲公司", "enterprise_name": "甲公司", "企业编号": "E1",
-            "月份": month, "当月净利润_元": value, "净利润_元": value,
-            "营业收入_元": value,
+def test_expected_empty_result_is_contained_in_any_valid_result():
+    for actual in (result([]), result([[999]]), result([[None, "extra"]], ["a", "b"])):
+        assert assess_result(actual, result([], ["x", "y"])) == {
+            "verdict": "pass", "reason": "expected_values_included",
+            "alignment": {"layout": "value_subset", "cells": []},
         }
-        actual_rows.append([fields[column] for column in actual_columns])
-        expected_rows.append([month + "-01", value])
-    actual = result(actual_columns, actual_rows)
-    expected = result(["stat_month", measure], expected_rows)
-    assert compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize(
-    ("actual_name", "expected_name"),
-    [("季度累计净利润_元", "net_profit_yuan"),
-     ("quarter_net_profit_yuan_元", "net_profit_yuan"),
-     ("april_net_profit_yuan_元", "may_net_profit_yuan"),
-     ("april_net_profit_yuan_元", "net_profit_yuan"),
-     ("期间收入合计_元", "operating_revenue_yuan"),
-     ("收入合计_元", "operating_revenue_yuan"),
-     ("期间利润总额_元", "total_profit"),
-     ("利润总额_元", "net_profit_yuan")],
-)
-def test_yuan_suffix_normalization_preserves_scope_and_measure(actual_name, expected_name):
-    assert not compare_submission_results(
-        result([actual_name], [[12]]), result([expected_name], [[12]]))
-
-
-@pytest.mark.parametrize(
-    ("actual_name", "expected_name"),
-    [("营业收入_万元", "operating_revenue_yuan"),
-     ("营业收入 (万元)", "operating_revenue_yuan"),
-     ("营业收入（亿元）", "operating_revenue_yuan"),
-     ("净利润(万元)", "net_profit_yuan"),
-     ("净利润 （USD）", "net_profit_yuan"),
-     ("net_profit_yuan_USD", "net_profit_yuan"),
-     ("net_profit_USD", "net_profit_yuan"),
-     ("税额_%", "tax_amount_yuan"),
-     ("tax_amount_万元", "tax_amount_yuan"),
-     ("person_count_元", "person_count"),
-     ("自然人数(元)", "person_count"),
-     ("overall_profit_rate_pct_元", "overall_profit_rate_pct"),
-     ("stat_month_元", "stat_month"),
-     ("net_profit_yuan_total", "net_profit_yuan")],
-)
-def test_incompatible_unit_or_qualifier_cannot_use_same_position_alias_fallback(
-        actual_name, expected_name):
-    expected = result([expected_name], [[12]])
-    assert not compare_submission_results(result([actual_name], [[12]]), expected)
-    assert not compare_submission_results(
-        result(["enterprise_name", actual_name], [["甲公司", 12]]),
-        expected, context=SINGLE_ENTERPRISE)
-
-
-def test_yuan_suffix_does_not_convert_amounts():
-    assert not compare_submission_results(
-        result(["营业收入_元", "enterprise_name"], [["12.00", "甲公司"]]),
-        result(["operating_revenue_yuan"], [["120000.00"]]),
-        context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize(
-    "columns",
-    [["净利润_元", "net_profit_yuan"],
-     ["当月净利润_元", "净利润（元）"],
-     ["营业收入_yuan", "revenue"],
-     ["stat_month_label", "stat_month"]],
-)
-def test_suffix_and_alias_normalization_cannot_hide_duplicate_semantic_columns(columns):
-    actual = result(columns, [[12, 12]])
-    assert not compare_submission_results(actual, actual)
-
-
-@pytest.mark.parametrize("defect", ["amount", "entity", "duplicate", "missing", "null", "range"])
-def test_yuan_alias_fix_does_not_accept_incorrect_business_results(defect):
-    actual = result(
-        ["企业名称", "净利润_元", "月份"], [["甲公司", "12.1234567", "2026-08"]])
-    expected = result(
-        ["stat_month", "net_profit_yuan"], [["2026-08-01", "12.1234567"]])
-    if defect == "amount":
-        actual["rows"][0][1] = "12.1234568"
-    elif defect == "entity":
-        actual["rows"][0][0] = "乙公司"
-    elif defect == "duplicate":
-        actual["rows"].append(list(actual["rows"][0]))
-    elif defect == "missing":
-        actual["rows"] = []
-    elif defect == "null":
-        actual["rows"][0][1] = None
-    elif defect == "range":
-        actual["rows"].append(["甲公司", "15.00", "2026-07"])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-def test_arbitrary_identical_names_can_be_reordered_without_value_guessing():
-    actual = result(["second_custom_measure", "first_custom_measure"], [[2, 1]])
-    expected = result(["first_custom_measure", "second_custom_measure"], [[1, 2]])
-    assert compare_submission_results(actual, expected)
-
-
-def test_unknown_alias_keeps_same_position_legacy_behavior_only():
-    expected = result(["stat_month", "net_profit_yuan"], [["2026-08-01", 12]])
-    assert compare_submission_results(
-        result(["stat_month", "custom_answer"], [["2026-08-01", 12]]), expected)
-    assert not compare_submission_results(
-        result(["custom_answer", "stat_month"], [[12, "2026-08-01"]]), expected)
-
-
-def test_unknown_alias_cannot_fill_gap_when_other_columns_have_moved():
-    expected = result(
-        ["stat_month", "person_count", "net_profit_yuan"],
-        [["2026-08-01", 2, 12]],
-    )
-    actual = result(["net_profit", "custom_count", "stat_month"],
-                    [[12, 2, "2026-08-01"]])
-    assert not compare_submission_results(actual, expected)
-
-
-@pytest.mark.parametrize(
-    ("actual_name", "expected_name"),
-    [("tax_amount", "operating_revenue_yuan"),
-     ("net_profit", "tax_amount_yuan"),
-     ("person_count", "assignment_count"),
-     ("quantity", "person_count"),
-     ("valuation", "operating_revenue_yuan"),
-     ("quarter_net_profit_yuan", "net_profit_yuan"),
-     ("april_net_profit_yuan", "may_net_profit_yuan")],
-)
-def test_equal_values_do_not_override_known_conflicting_meanings(actual_name, expected_name):
-    assert not compare_submission_results(
-        result([actual_name], [[0]]), result([expected_name], [[0]]))
-
-
-@pytest.mark.parametrize(
-    "columns",
-    [["stat_month", "month"], ["net_profit", "net_profit_yuan"],
-     ["enterprise_name", "企业名称"], ["unit", "amount_unit"], ["value", "value"]],
-)
-def test_duplicate_semantic_columns_are_ambiguous_even_when_values_match(columns):
-    actual = result(columns, [[0, 0]])
-    assert not compare_submission_results(actual, actual, context=SINGLE_ENTERPRISE)
-
-
-def test_all_three_auxiliary_fields_can_accompany_explicit_required_columns():
-    actual = result(
-        ["企业名称", "营业收入", "unit", "企业编号", "month"],
-        [["甲公司", "12.00", "元", "E1", "2026-08-01"]],
-    )
-    expected = result(["stat_month", "operating_revenue_yuan"], [["2026-08-01", 12]])
-    before = deepcopy((actual, expected, SINGLE_ENTERPRISE))
-    assert compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-    assert (actual, expected, SINGLE_ENTERPRISE) == before
-    assert not compare_results(actual, expected)
-
-
-def test_extra_column_does_not_allow_guessing_unknown_required_alias():
-    actual = result(["month", "custom_answer", "enterprise_name"],
-                    [["2026-08-01", 12, "甲公司"]])
-    expected = result(["stat_month", "operating_revenue_yuan"], [["2026-08-01", 12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize(
-    ("extra_name", "extra_value"),
-    [("main_business_revenue", 12), ("total_profit", 12), ("net_profit", 12),
-     ("report_status", "正式"), ("source_system", "企业报送系统"),
-     ("value_status", "已知正数"), ("monthly_record_id", "MR-1")],
-)
-def test_additional_business_and_report_columns_remain_failures(extra_name, extra_value):
-    actual = result(["operating_revenue_yuan", extra_name], [[12, extra_value]])
-    expected = result(["operating_revenue_yuan"], [[12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize("unit", ["万元", "人民币", None, "", "元 "])
-def test_auxiliary_unit_must_match_yuan_without_conversion(unit):
-    actual = result(["operating_revenue_yuan", "unit"], [[12, unit]])
-    expected = result(["operating_revenue_yuan"], [[12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-def test_yuan_label_cannot_compensate_for_incorrect_amount():
-    actual = result(["operating_revenue_yuan", "unit"], [[12, "元"]])
-    expected = result(["operating_revenue_yuan"], [[120000]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize("measure", ["person_count", "overall_profit_rate_pct"])
-def test_money_unit_is_not_auxiliary_to_nonmonetary_output(measure):
-    actual = result([measure, "unit"], [[12, "元"]])
-    expected = result([measure], [[12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-@pytest.mark.parametrize("context", [None, {}, {"amount_unit": "万元"}])
-def test_auxiliary_unit_requires_private_yuan_contract(context):
-    actual = result(["operating_revenue_yuan", "unit"], [[12, "元"]])
-    expected = result(["operating_revenue_yuan"], [[12]])
-    assert not compare_submission_results(actual, expected, context=context)
-
-
-@pytest.mark.parametrize(
-    ("extra_name", "extra_value"),
-    [("enterprise_id", "E2"), ("enterprise_name", "乙公司"),
-     ("enterprise_id", None), ("enterprise_name", "甲")],
-)
-def test_wrong_auxiliary_enterprise_is_not_ignored(extra_name, extra_value):
-    actual = result(["operating_revenue_yuan", extra_name], [[12, extra_value]])
-    expected = result(["operating_revenue_yuan"], [[12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-def test_entity_id_and_name_must_describe_the_same_enterprise():
-    actual = result(["enterprise_id", "enterprise_name", "operating_revenue_yuan"],
-                    [["E1", "乙公司", 12]])
-    expected = result(["enterprise_id", "operating_revenue_yuan"], [["E1", 12]])
-    assert not compare_submission_results(actual, expected, context=TWO_ENTERPRISES)
-
-
-def test_multi_enterprise_auxiliary_names_bind_to_required_row_identity():
-    expected = result(["enterprise_id", "operating_revenue_yuan"], [["E1", 12], ["E2", 12]])
-    actual = result(["operating_revenue_yuan", "enterprise_name", "enterprise_id"],
-                    [[12, "乙公司", "E2"], [12, "甲公司", "E1"]])
-    assert compare_submission_results(actual, expected, context=TWO_ENTERPRISES)
-    actual["rows"] = [[12, "甲公司", "E2"], [12, "乙公司", "E1"]]
-    assert not compare_submission_results(actual, expected, context=TWO_ENTERPRISES)
-
-
-def test_multiple_enterprises_without_required_row_identity_cannot_be_guessed():
-    actual = result(["enterprise_name", "operating_revenue_yuan"], [["甲公司", 12]])
-    expected = result(["operating_revenue_yuan"], [[12]])
-    assert not compare_submission_results(actual, expected, context=TWO_ENTERPRISES)
-
-
-@pytest.mark.parametrize(
-    "context",
-    [None, {}, {"enterprises": []}, {"enterprises": "甲公司"},
-     {"enterprises": [None]}, {"enterprises": [{}]},
-     {"enterprises": [{"enterprise_id": "E1"}]},
-     {"enterprises": [{"enterprise_id": "E1", "enterprise_name": "甲公司"},
-                      {"enterprise_id": "E1", "enterprise_name": "甲公司"}]},
-     {"enterprises": [{"enterprise_id": "E1", "enterprise_name": ""}]}],
-)
-@pytest.mark.parametrize("empty", [False, True])
-def test_entity_context_must_be_valid_even_for_empty_results(context, empty):
-    actual = result(["enterprise_name", "operating_revenue_yuan"],
-                    [] if empty else [["甲公司", 12]])
-    expected = result(["operating_revenue_yuan"], [] if empty else [[12]])
-    assert not compare_submission_results(actual, expected, context=context)
-
-
-@pytest.mark.parametrize("field", ["enterprise_id", "enterprise_name", "amount_unit"])
-def test_whitelisted_field_is_not_optional_when_reference_requires_it(field):
-    expected = result(["operating_revenue_yuan", field], [[12, "required"]])
-    actual = result(["operating_revenue_yuan"], [[12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-def test_status_cannot_replace_required_month_even_when_width_matches():
-    actual = result(["tax_amount", "value_status"], [[0, "确认零"]])
-    expected = result(["stat_month", "tax_amount_yuan"], [["2026-02-01", 0]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-def test_month_label_normalization_is_symmetric_and_does_not_relax_strict_reference():
-    actual = result(["month"], [["2026-02"]])
-    expected = result(["stat_month"], [["2026-02-01"]])
-    assert compare_submission_results(actual, expected)
-    assert compare_submission_results(expected, actual)
-    assert not compare_results(actual, expected)
-
-
-@pytest.mark.parametrize("value", ["2026-02-02", "2026-02-28", "2026-02-01T00:00:00",
-                                  "2026-2", "2026-02-01 00:00:00"])
-def test_month_normalization_does_not_truncate_other_dates_or_timestamps(value):
-    assert not compare_submission_results(
-        result(["stat_month"], [[value]]), result(["stat_month"], [["2026-02"]]))
-
-
-@pytest.mark.parametrize("value", ["2026-00", "2026-13", "0000-01", "2026-13-01"])
-def test_invalid_calendar_months_do_not_pass_even_if_identical(value):
-    actual = result(["stat_month"], [[value]])
-    assert not compare_submission_results(actual, actual)
-
-
-@pytest.mark.parametrize("field", ["event_date", "start_date", "balance_as_of_date", "custom_date"])
-def test_month_normalization_does_not_apply_to_other_date_fields(field):
-    assert not compare_submission_results(
-        result([field], [["2026-02"]]), result([field], [["2026-02-01"]]))
-
-
-def test_projection_preserves_duplicate_row_multiplicity():
-    expected = result(["stat_month", "net_profit_yuan"], [["2026-08-01", 12]])
-    actual = result(["enterprise_name", "month", "net_profit"],
-                    [["甲公司", "2026-08", 12], ["甲公司", "2026-08", 12]])
-    assert not compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-    expected["rows"].append(["2026-08-01", 12])
-    assert compare_submission_results(actual, expected, context=SINGLE_ENTERPRISE)
-
-
-def test_row_order_and_decimal_trailing_zeros_are_irrelevant():
-    actual = result(["net_profit", "month"], [["1.2300", "2026-08"], [None, "2026-07"]])
-    expected = result(["stat_month", "net_profit_yuan"],
-                      [["2026-07-01", None], ["2026-08-01", Decimal("1.23")]])
-    assert compare_submission_results(actual, expected)
 
 
 @pytest.mark.parametrize("replacement", [0, "0.00", "", "NULL", False])
-def test_null_remains_distinct_from_zero_text_and_boolean(replacement):
-    assert not compare_submission_results(
-        result(["tax_amount"], [[replacement]]), result(["tax_amount_yuan"], [[None]]))
+def test_null_is_required_as_null_and_does_not_equal_zero_or_boolean(replacement):
+    assert not compare_submission_results(result([[replacement]]), result([[None]]))
+    assert compare_submission_results(result([[replacement], [None]]), result([[None]]))
 
 
-def test_decimal_precision_is_not_rounded_or_tolerated():
-    value = "123456789012345678901234567890.12345678901234567890"
+def test_decimal_equivalence_preserves_all_digits():
+    exact = "123456789012345678901234567890.12345678901234567890"
     different = "123456789012345678901234567890.12345678901234567891"
-    expected = result(["net_profit_yuan"], [[Decimal(value)]])
     with localcontext() as context:
         context.prec = 3
-        assert compare_submission_results(result(["net_profit"], [[value]]), expected)
-        assert not compare_submission_results(result(["net_profit"], [[different]]), expected)
-        assert not compare_submission_results(
-            result(["net_profit"], [["1.2345671"]]), result(["net_profit_yuan"], [["1.234567"]]))
+        assert compare_submission_results(result([[exact]]), result([[Decimal(exact)]]))
+        assert not compare_submission_results(result([[different]]), result([[Decimal(exact)]]))
+        assert compare_submission_results(result([["1.2300"]]), result([["123e-2"]]))
 
 
-def test_comparison_never_aggregates_or_selects_a_preferred_month():
-    actual = result(["stat_month", "operating_revenue_yuan"],
-                    [["2026-07-01", 12], ["2026-08-01", 15]])
+@pytest.mark.parametrize("expected_column", [
+    "stat_month", "month", "month_label", "stat_month_label", "月份", "统计月份", "业务月份",
+])
+@pytest.mark.parametrize(("actual_value", "expected_value"), [
+    ("2026-06", "2026-06-01"), ("2026-06-01", "2026-06"),
+])
+def test_expected_month_dimension_allows_first_day_equivalence(
+        expected_column, actual_value, expected_value):
+    assert compare_submission_results(
+        result([[actual_value]], ["completely unrelated alias"]),
+        result([[expected_value]], [expected_column]))
+
+
+def test_month_dimensions_do_not_reintroduce_row_bindings():
+    expected = result([["2026-06-01", 1], ["2026-07-01", 2]], ["stat_month", "amount"])
+    actual = result([[2, "2026-06"], [1, "2026-07"]], ["arbitrary", "arbitrary"])
+    assert compare_submission_results(actual, expected)
+
+
+@pytest.mark.parametrize("actual_value", [
+    "2026-06-02", "2026-06-01T00:00:00", "2026-6", "2026-07",
+])
+def test_different_month_or_more_precise_date_is_not_the_required_month(actual_value):
     assert not compare_submission_results(
-        actual, result(["stat_month", "operating_revenue_yuan"], [["2026-08-01", 15]]))
+        result([[actual_value]]), result([["2026-06-01"]], ["stat_month"]))
+
+
+@pytest.mark.parametrize("column", ["start_date", "end_date", "event_date", "custom_date"])
+def test_non_month_dates_keep_their_full_day(column):
     assert not compare_submission_results(
-        result(["net_profit"], [[12], [15]]), result(["net_profit_yuan"], [[27]]))
+        result([["2026-06"]]), result([["2026-06-01"]], [column]))
 
 
-@pytest.mark.parametrize(
-    "malformed",
-    [None, {}, {"columns": [], "rows": []},
-     result([None], [[1]]), result(["net_profit"], [[1, 2]]),
-     result(["net_profit"], [[{"nested": 1}]]),
-     result(["net_profit"], [[float("nan")]])],
-)
-def test_malformed_submission_does_not_match(malformed):
-    assert not compare_submission_results(malformed, malformed)
-    assert not compare_submission_results(malformed, result(["net_profit_yuan"], [[1]]))
+def test_exact_date_and_month_require_separate_cells_without_greedy_loss():
+    expected = result([["2026-06-01", "2026-06-01"]], ["stat_month", "start_date"])
+    assert compare_submission_results(result([["2026-06-01"], ["2026-06"]]), expected)
+    assert not compare_submission_results(result([["2026-06-01"]]), expected)
 
 
-def test_evaluation_forwards_private_context_and_preserves_original_record():
-    actual = result(["enterprise_name", "net_profit", "month"],
-                    [["甲公司", "12.00", "2026-08"]])
-    operation = {
-        "kind": "sql", "query_id": "submitted", "sql": "SELECT submitted_result",
-        "success": True, "is_complete": True, **actual,
-    }
-    record = {"status": "completed", "result_query_id": "submitted",
-              "operations": [operation], "answer": "正文不参与评分。"}
-    expected = result(["stat_month", "net_profit_yuan"], [["2026-08-01", 12]])
-    before = deepcopy(record)
-    evaluated = evaluate_result(record, expected, context=SINGLE_ENTERPRISE)
-    assert evaluated == {
-        "verdict": "pass", "query_id": "submitted", "sql": "SELECT submitted_result",
-        "actual": actual,
-    }
-    assert record == before
-    assert evaluate_result(record, expected)["verdict"] == "fail"
-    record["operations"][0]["is_complete"] = False
-    assert evaluate_result(record, expected, context=SINGLE_ENTERPRISE)["verdict"] == "fail"
+def test_observed_c4_l1_02_e1_arbitrary_aliases_pass():
+    values = [["18179455.58", "-518256.88", "-2.850783"]]
+    actual = result(values, ["period_operating_revenue_yuan", "a", "b"])
+    expected = result(values, ["period_revenue_yuan", "period_total_profit_yuan",
+                               "overall_profit_rate_pct"])
+    assert compare_submission_results(actual, expected)
+
+
+def test_observed_c2_l1_01_e2_month_aliases_pass():
+    values = [[3, 2, 1, 0, 1, "-3723254.78", "-8970184.77", "48480590.17", "35787150.62"]]
+    actual = result(values, [f"actual_{index}" for index in range(9)])
+    expected = result(values, [f"expected_{index}" for index in range(9)])
+    assert compare_submission_results(actual, expected)
+
+
+def test_observed_c4_l3_02_e1_complex_label_and_long_layout_pass():
+    actual = result([
+        ["2026-06", "26.429327"], ["2026-07", "24.897740"],
+        ["2026-06~2026-07平均", "25.663533"],
+    ], ["unrecognized label", "unrecognized value"])
+    expected = result([["26.429327", "24.897740", "25.663533"]],
+                      ["june_profit_rate_pct", "july_profit_rate_pct", "mean_monthly_profit_rate_pct"])
+    before = deepcopy((actual, expected))
+    assert compare_submission_results(actual, expected)
+    assert (actual, expected) == before
+
+
+@pytest.mark.parametrize("malformed", [
+    None, {}, {"columns": [], "rows": []}, {"columns": [None], "rows": [[1]]},
+    {"columns": ["a"]}, {"columns": ["a"], "rows": None},
+    {"columns": ["a"], "rows": [1]}, {"columns": ["a"], "rows": [[1, 2]]},
+])
+def test_invalid_table_structure_fails(malformed):
+    assert assess_result(malformed, result([[1]]))["reason"] == "invalid_result"
+    assert assess_result(result([[1]]), malformed)["reason"] == "invalid_result"
+
+
+def test_evaluation_only_scores_explicit_submission_without_mutating_it():
+    first, last = operation("first", [[1]]), operation("last", [[2]])
+    submitted = record(first, last, query_id="first")
+    submitted["answer"] = "回复正文不参与SQL结果评分。"
+    before = deepcopy(submitted)
+    evaluated = evaluate_result(submitted, result([[1]]))
+    assert evaluated["verdict"] == "pass"
+    assert evaluated["reason"] == "expected_values_included"
+    assert evaluated["query_id"] == "first"
+    assert evaluated["actual"] == result([[1]], ["arbitrary_name"])
+    assert submitted == before
+    assert evaluate_result(record(first, last, query_id="last"), result([[1]]))["verdict"] == "fail"
+
+
+@pytest.mark.parametrize("sql", [
+    "SELECT 1", "SELECT value FROM another_table", "WITH x AS (SELECT 1) SELECT * FROM x",
+])
+def test_sql_text_and_query_source_have_no_scoring_role(sql):
+    assert evaluate_result(record(operation(sql=sql)), result([[1]]))["verdict"] == "pass"
+
+
+@pytest.mark.parametrize("query_id", [
+    None, "", " submitted", "submitted ", "sub\nmitted", 1, "missing", "null",
+])
+def test_missing_or_invalid_submission_identity_fails(query_id):
+    evaluated = evaluate_result(record(operation(), query_id=query_id), result([[1]]))
+    assert evaluated["verdict"] == "fail"
+    assert evaluated["reason"] == "invalid_submission"
+    assert evaluated["sql"] is None
+    assert evaluated["actual"] is None
+
+
+@pytest.mark.parametrize("operations", [
+    [], [operation(), operation()], [operation(kind="schema")],
+    [operation(), operation(kind="schema")], [operation(sql="")],
+])
+def test_absent_duplicate_or_non_sql_submission_fails(operations):
+    assert evaluate_result(record(*operations), result([[1]]))["reason"] == "invalid_submission"
+
+
+@pytest.mark.parametrize("changes", [
+    {"success": False}, {"success": 1}, {"is_complete": False}, {"is_complete": None},
+])
+def test_failed_or_incomplete_query_does_not_provide_a_completed_result(changes):
+    evaluated = evaluate_result(record(operation(**changes)), result([[1]]))
+    assert evaluated["verdict"] == "fail"
+    assert evaluated["reason"] == "submission_not_completed"
+
+
+@pytest.mark.parametrize("status", ["failed", "limit_reached", "running", None])
+def test_unfinished_task_is_not_scored_as_a_completed_submission(status):
+    assert evaluate_result(record(operation(), status=status), result([[1]]))["reason"] == "submission_not_completed"
+
+
+def test_invalid_record_or_result_fails():
+    assert evaluate_result(None, result([[1]]))["reason"] == "invalid_submission"
+    assert evaluate_result(record(operation()), None)["reason"] == "invalid_result"
+    assert evaluate_result(record(operation(rows=[[1, 2]])), result([[1]]))["reason"] == "invalid_result"
+
+
+@pytest.mark.parametrize(("question", "count"), [
+    ("核查2026年3月的营收。", 1),
+    ("核查2025年11月、12月两个月的营收。", 2),
+    ("汇总2025年11月、12月和2026年3月的营收。", 3),
+    ("汇总2025年3月和2026年3月的营收。", 2),
+    ("汇总2026年3月至5月的营收。", 3),
+    ("汇总2025年11月至2026年2月的营收。", 4),
+    ("汇总2026年三月、四月和五月的营收。", 3),
+    ("汇总2026年第二季度的营收。", 3),
+    ("汇总2026-03、2026-04和2026-05的营收。", 3),
+])
+def test_given_calendar_count_is_not_a_required_answer(question, count):
+    expected = result([[count, "20460585.78"]], ["business_month_count", "revenue"])
+    actual = result([["20460585.78"]], ["任意别名"])
+    before = deepcopy(expected)
+    assessed = assess_result(actual, expected, question=question)
+    assert assessed["verdict"] == "pass"
+    assert assessed["alignment"]["omitted_known_inputs"] == [
+        {"expected": [0, 0], "value": count, "reason": "month_count_given_in_question"}]
+    assert expected == before
+    assert not compare_submission_results(result([["20460585.79"]]), expected, question=question)
+
+
+@pytest.mark.parametrize("question", [
+    None, "汇总营收。", "汇总2026年13月的营收。", "汇总2026年十三月的营收。",
+    "查询2026年3月15日的收入。", "查询2026-03-15的收入。",
+    "2026年3月的营收，统计月份的数量是多少？",
+    "2026年3月的营收及月份个数。", "2026年3月有几个月有数据？",
+    "汇总2026年3月中有营业收入的月份。", "汇总2026年3月利润为正的月份。",
+    "汇总截至2026年3月的营收。",
+])
+def test_unknown_or_requested_coverage_count_is_still_required(question):
+    expected = result([[1, 12]], ["business_month_count", "revenue"])
+    assert not compare_submission_results(result([[12]]), expected, question=question)
+
+
+@pytest.mark.parametrize("column", [
+    "reported_month_count", "known_tax_month_count", "observed_month_count",
+    "loss_month_count", "person_count", "assignment_count",
+])
+def test_explicit_calendar_scope_does_not_remove_other_counts(column):
+    expected = result([[3, 12]], [column, "amount"])
+    assert not compare_submission_results(
+        result([[12]]), expected, question="汇总2026年3月、4月、5月的数据。")
+
+
+def test_fewer_observed_business_months_remain_a_query_result():
+    expected = result([[2, 12]], ["business_month_count", "revenue"])
+    question = "汇总2026年3月、4月、5月的营收。"
+    assert not compare_submission_results(result([[12]]), expected, question=question)
+    assert compare_submission_results(result([[2, 12]], ["a", "b"]), expected, question=question)
+
+
+def test_only_explicit_month_reference_reuses_user_history():
+    history = [{"role": "user", "content": "查询2026年3月、4月、5月的营收。"}]
+    expected = result([[3, 12]], ["business_month_count", "revenue"])
+    submitted = record(operation(rows=[[12]]))
+    assert evaluate_result(submitted, expected, question="把这些月份汇总一下。",
+                           history=history)["verdict"] == "pass"
+    assert evaluate_result(submitted, expected, question="汇总实际经营期间的收入。",
+                           history=history)["verdict"] == "fail"
+    assert not compare_submission_results(result([[12]]), expected, question="汇总收入。",
+                                          history=history)
+
+
+def test_tax_status_equivalence_does_not_supply_a_missing_status_or_tax_value():
+    expected = result([[None, "未知"], ["35082.92", "已知正数"]],
+                      ["tax_amount_yuan", "value_status"])
+    # Arbitrary aliases/layout are still accepted; both answers need their own cells.
+    actual = result([[1, "35082.92"], [None, None]], ["a", "b"])
+    assessed = assess_result(actual, expected)
+    assert assessed["verdict"] == "pass"
+    cells = assessed["alignment"]["cells"]
+    assert sum(pair.get("match") == "tax_status_equivalent" for pair in cells) == 2
+    assert len({tuple(pair["actual"]) for pair in cells}) == 4
+    assert not compare_submission_results(result([[None], ["35082.92"], [1]]), expected)
+    assert not compare_submission_results(result([[None], [None], ["35082.92"]]), expected)
+    assert not compare_submission_results(result([[None], [None], [1]]), expected)
+
+
+def test_tax_status_aliases_do_not_change_other_text_or_null_meanings():
+    assert compare_submission_results(
+        result([[0, 0]], ["a", "b"]),
+        result([[0, "确认零"]], ["tax_amount_yuan", "value_status"]))
+    assert not compare_submission_results(result([[None]]), result([["未知"]], ["remarks"]))
+    assert not compare_submission_results(result([[1]]), result([["已知正数"]], ["value_status"]))
+    assert not compare_submission_results(
+        result([[None, 0]], ["a", "b"]),
+        result([[None, "未知"]], ["tax_amount_yuan", "value_status"]))
+
+
+def test_ordinary_values_are_matched_before_tax_status_alternatives():
+    expected = result([["未知", None, "未知"]], ["value_status", "tax_amount_yuan", "remarks"])
+    assert compare_submission_results(result([["未知", None, None]], ["a", "b", "c"]), expected)
+    assert not compare_submission_results(result([["未知", None]], ["a", "b"]), expected)

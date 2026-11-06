@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from .common import read_json
-from .comparison_versions import COVERAGE_COMPARISON_VERSION
+from .comparison import COMPARISON_VERSION
 from .runner import condition_completed, load_run
 
 
@@ -22,10 +22,20 @@ def summarize(run_dir):
                     or row.get("expected") != config["standards"][case_id]
                     or row.get("verdict") not in ("pass", "fail")):
                 raise ValueError("单题记录与本轮配置不符：" + str(path))
-            if config.get("comparison_version") == COVERAGE_COMPARISON_VERSION:
-                if (row.get("comparison_version") != COVERAGE_COMPARISON_VERSION
-                        or not isinstance(row.get("comparison_reason"), str)):
-                    raise ValueError("单题记录与本轮v3评分版本不符：" + str(path))
+            comparison_version = config.get("comparison_version")
+            # Historical results remain readable; their stored verdicts are never
+            # re-evaluated here. New results must carry the current audit fields.
+            if comparison_version == COMPARISON_VERSION:
+                if (row.get("comparison_version") != comparison_version
+                        or not isinstance(row.get("comparison_reason"), str)
+                        or "comparison_alignment" not in row
+                        or (row["comparison_alignment"] is not None
+                            and not isinstance(row["comparison_alignment"], dict))
+                        or (row["verdict"] == "pass"
+                            and not isinstance(row["comparison_alignment"], dict))):
+                    raise ValueError("单题记录与本轮评分版本不符：" + str(path))
+            elif "comparison_version" in row and row["comparison_version"] != comparison_version:
+                raise ValueError("历史单题记录与本轮评分版本不符：" + str(path))
             passed += row["verdict"] == "pass"
             failed += row["verdict"] == "fail"
         complete = condition_completed(run / mode / "history.sqlite3")

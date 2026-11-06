@@ -1,0 +1,1602 @@
+{
+  "version": "stage1_archive_manifest_v1",
+  "stage": "dev_v1.1",
+  "frozen_date": "2026-11-06",
+  "repository": "https://github.com/JiXX-bisl/LifelongLearning-business",
+  "code": {
+    "branch": "dev_v1.1",
+    "immutable_tag": "dev_v1.1-20261106",
+    "base_commit": "a044feda6e219747f8a8b2de5d18103b74fd5521",
+    "snapshot_resolution": "本清单随代码提交归档；准确提交由固定标签 dev_v1.1-20261106 解析，避免在提交内容中循环嵌入自身 SHA。",
+    "implementation_version": "dev_v1.1",
+    "comparison_version": "expected_subset_v2",
+    "key_files": [
+      {
+        "path": "src/psu_memory/validation/comparison.py",
+        "bytes": 12199,
+        "sha256": "07ef97f8f948982345cf4d047694f4999fa1cf18c1f17854461bd4650e1d501a"
+      },
+      {
+        "path": "src/psu_memory/validation/runner.py",
+        "bytes": 18872,
+        "sha256": "3eb0769416a2cb3c8ae929faa67a979fa6f301de3a33a520299d82f5d4db106c"
+      },
+      {
+        "path": "src/psu_memory/cli/rescore_values.py",
+        "bytes": 6073,
+        "sha256": "4584d0f4a962141bf6b3669592db6565687cfa76341bba49ba44785a6ce70038"
+      },
+      {
+        "path": "configs/validation/enterprise_v30_120_v1_0_2_natural_values.json",
+        "bytes": 1274,
+        "sha256": "f4693508832eb455921b95b87fba322357ddf3ed54141e4b2686cb61de0c88f8"
+      },
+      {
+        "path": "configs/validation/enterprise_v30_120_v1_0_2_natural_values_windows_cuda.json",
+        "bytes": 1268,
+        "sha256": "45ede6362b112db9c43f95ceeb45b981bfc1d14d913a6860f2818a13a0315c42"
+      },
+      {
+        "path": "configs/validation/enterprise_v30_120_v1_0_2_public_context_minimal_v1.json",
+        "bytes": 1207,
+        "sha256": "7135118db46b3144ac7a8e7cb730e141dec30fa4a7da29704996e9a95091697b"
+      }
+    ]
+  },
+  "experiment": {
+    "phase": 1,
+    "question_bank": "enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded",
+    "data_version": "synthetic_enterprise_v30_120_v1.0.2",
+    "formation_cases": 60,
+    "test_cases": 72,
+    "excluded_clarification_cases": 2,
+    "reviewed_common_seed_count": 18,
+    "public_prompt": "v3",
+    "conditions": {
+      "baseline": {
+        "memory": false
+      },
+      "fifo": {
+        "capacity": 18
+      },
+      "adaptive": {
+        "capacity_per_group": 8,
+        "groups": [
+          "detail",
+          "aggregate",
+          "compare",
+          "rank"
+        ],
+        "total_capacity": 32
+      }
+    },
+    "capacity_difference": "已由用户确认，不在本阶段变更。"
+  },
+  "input_bundle": {
+    "release_tag": "repro-v030-20261020",
+    "release_url": "https://github.com/JiXX-bisl/LifelongLearning-business/releases/tag/repro-v030-20261020",
+    "assets": [
+      {
+        "name": "enterprise-v030-v1.0.2-inputs-20261020.manifest.json",
+        "url": "https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.manifest.json",
+        "bytes": 76083,
+        "sha256": "daecc3bccf199e8e083531194afeab90ccaca7d03865b12d19050d8903810baa"
+      },
+      {
+        "name": "enterprise-v030-v1.0.2-inputs-20261020.zip",
+        "url": "https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.zip",
+        "bytes": 4828797,
+        "sha256": "681d19fd3b5e6c7e047591b29e294e1f3571210d209d625bb7eaf9150c001d8b"
+      },
+      {
+        "name": "enterprise-v030-v1.0.2-inputs-20261020.zip.sha256",
+        "url": "https://github.com/JiXX-bisl/LifelongLearning-business/releases/download/repro-v030-20261020/enterprise-v030-v1.0.2-inputs-20261020.zip.sha256",
+        "bytes": 109,
+        "sha256": "b5b61183065731426a2a40f68507003cfbf413bec77781d7e57b017aba3b1c58"
+      }
+    ],
+    "reused_without_modification": true,
+    "contents": "合成数据 SQL/数据/校验文件、私有验收材料、题库/ground_truth/split/reference_validation、种子及来源材料。",
+    "historical_metadata": "原包 expected_coverage_v3、设备说明及题库 model_experiments=not_run / split_status=not_assigned 属于原封存时点；当前评分、设备与实验进展以本代码和阶段总结为准。"
+  },
+  "key_materials": [
+    {
+      "path": "configs/validation/reproduction_bundle_v1.json",
+      "bytes": 68637,
+      "sha256": "fc6f4e68a4ca562fa65063775af2e12c8660678e125d197fbee8d3197541d294"
+    },
+    {
+      "path": "data/questions/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/questions.json",
+      "bytes": 46810,
+      "sha256": "3ee24b133796e39e3abf2ccaf3a4bf34838ceeaa56c9f8bd7edcdcfca5eea917"
+    },
+    {
+      "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/ground_truth.json",
+      "bytes": 678974,
+      "sha256": "e9172ba4f2b4a4e0163b3df5a2621dde4309d8b658f14d92e0da1d9935620c61"
+    },
+    {
+      "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/split_v1.json",
+      "bytes": 15721,
+      "sha256": "2a7f76991829cac9afc012c57f95ccc4fdd02c02febeeee481c999943c12bd4e"
+    },
+    {
+      "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/reference_validation.json",
+      "bytes": 8904,
+      "sha256": "f4a905cbe9d86be15dbf16cb5e8913927fd6e80d5b5cf41380f2fa4b8d163f39"
+    },
+    {
+      "path": "data/derived/psu_memory/seeds/reviewed-20261019-165637-416369/seed.sqlite3",
+      "bytes": 937984,
+      "sha256": "f09621c7bcbece6befeb113f801972dfdce8d994a8c8b138cc0ac3132edc5f0d"
+    }
+  ],
+  "external_dependencies": {
+    "embedding": {
+      "model_id": "BAAI/bge-m3",
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "url": "https://huggingface.co/BAAI/bge-m3/tree/5617a9f61b028005a4858fdac845db406aefb181",
+      "implementation_url": "https://github.com/FlagOpen/FlagEmbedding",
+      "weights_in_archive": false
+    },
+    "dependency_lock_files": [
+      {
+        "path": "requirements-dev.txt",
+        "bytes": 113,
+        "sha256": "d05b93a5baac9dba4950237687fd36849ef28c98d6d10d4c1e12f033eddd6a37"
+      },
+      {
+        "path": "requirements-embedding.txt",
+        "bytes": 317,
+        "sha256": "8312c24761d8255ae95d320ba5670c732d4763acd5fabc37c9742c4ac49c41ab"
+      },
+      {
+        "path": "requirements-psu.txt",
+        "bytes": 90,
+        "sha256": "0ac18fe455ba27c1b085df3033029d1a4dba490f95601250083309bc35a79760"
+      },
+      {
+        "path": "requirements-runtime.txt",
+        "bytes": 348,
+        "sha256": "f8d1e1a2e73db4bdfc3dce9b92c6fe3f80dcf39ee62c86d52f2f083223733242"
+      },
+      {
+        "path": "requirements-windows-cuda.txt",
+        "bytes": 411,
+        "sha256": "8b8bf7e2240d420afb3f3c9173b0db1bde9494eac7fe72102e9eeaa28d2c6c4e"
+      }
+    ],
+    "setup_guide": "README.md"
+  },
+  "evidence_archive": {
+    "path": "archives/dev_v1.1/stage1-evidence-20261106.zip",
+    "bytes": 1835498,
+    "sha256": "150cc399fbfc05ad96edeb87b18afa34f2e35c6acebf1f42fc6e18612611b289",
+    "entry_count": 232,
+    "uncompressed_bytes": 7195132,
+    "original_run_files": 227,
+    "original_result_json_files": 216,
+    "opaque_sqlite_files": 3,
+    "entries": [
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/history.sqlite3",
+        "bytes": 2768896,
+        "sha256": "bdce9faf243526f56e94edbacc77385ef184eb03bd38cda133215ad1cdb9d700",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L1-01-E1.json",
+        "bytes": 3832,
+        "sha256": "161e4cd1a118049251e40902a889d3137e598ea2ea2e222f03e38369bc374bc8",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L1-01-E2.json",
+        "bytes": 4610,
+        "sha256": "015f21e92b83fa8cc5c7ddbd9eda54c3c208c771fa161a1bed5313de398678f7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L1-02-E1.json",
+        "bytes": 3890,
+        "sha256": "076850f40b4cc6c53f77eafb4cdd1ab2bde91ffac1bf64dd7154a6f4ccf74d26",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L1-02-E2.json",
+        "bytes": 3405,
+        "sha256": "53578b06bd1574fc25be3d628a9b3db71487531c1783a6f752329ac08702ebbf",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L2-01-E1.json",
+        "bytes": 4046,
+        "sha256": "48aa903bc96d8992f1bb1a8f06a747cef7143d489179ca3c7213b3a4642a9ac7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L2-01-E2.json",
+        "bytes": 6372,
+        "sha256": "f137df85d188c9add1b568c8190752d09f746a14e57737722eb12687004aba09",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L3-02-E1.json",
+        "bytes": 3251,
+        "sha256": "b200d367c8f25e68bdc30daf1aacd245808c455875dc076dd82495e0a6c138e5",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A1-L3-02-E2.json",
+        "bytes": 3263,
+        "sha256": "9ffa7668983f448fac29593de179b610b1f0791550424ce069245fd80d42796d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A2-L1-01-E1.json",
+        "bytes": 5757,
+        "sha256": "58e67aa6cd85f6a2e6ad3b3a3769bbc5fce75a44ec5d330717d77a9d3d72f92a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A2-L1-01-E2.json",
+        "bytes": 5108,
+        "sha256": "e8cc13298b441f5c70240848a2dfe58482f612965ac2db9ff0b1aa595e9be57c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A2-L2-01.json",
+        "bytes": 4049,
+        "sha256": "fb7a7070fdb81d6d3ef638dfd0ded446c6211276afb6b96b47fc7356ad0ee97c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A2-L2-02-E1.json",
+        "bytes": 4964,
+        "sha256": "3b083e5b73dee4042aea6d47e901c851d66137406a0e8f9848e64103525560f5",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A2-L2-02-E2.json",
+        "bytes": 5381,
+        "sha256": "a6bb5c6eb787f6010bbd816b0a68295a04bc07ed3d463ce550514badc3670490",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A2-L3-01.json",
+        "bytes": 3682,
+        "sha256": "a3b4b1f666bf4ca1f709e3cb89403e51fbbba9c9571d7202c62a1871a6d8c7bf",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A4-L1-01.json",
+        "bytes": 2116,
+        "sha256": "c4b8201a57000f6d0eedca154e4d9bda9a5d3fbb986e77a6afd980fb4b081140",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A4-L1-02.json",
+        "bytes": 2202,
+        "sha256": "fd4e726694ea5bd69f30b750aeb565d66a8223911d0d082b46f39626aa9d197d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A4-L2-01.json",
+        "bytes": 3067,
+        "sha256": "bb4a615794c1d6b81c431d1a57ddfd50e20e09005923bd4d4d8e7c67c6d0a54b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A4-L2-02.json",
+        "bytes": 3198,
+        "sha256": "92f4eb58525690cd71599ffbfb68a5e7302757da5c897e99b4347a5e66e95b90",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A4-L3-01.json",
+        "bytes": 1778,
+        "sha256": "e609877f0c20c4be36789414e7a7d71e81d39bdbd60d09decdeaca98589e3cfa",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A4-L3-02.json",
+        "bytes": 1343,
+        "sha256": "39cd30f94e154939e49683ed52fddea2a292377cd61a802feea45a94df1e95a2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A5-L2-01.json",
+        "bytes": 3580,
+        "sha256": "90153427246dd46e0e8bb07c4f85ea494d37a2ca17150add719cdc6dae8c235e",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A5-L2-02-E1.json",
+        "bytes": 4320,
+        "sha256": "5226b95eb8e99f8245ae80f717ee87e8bfaebd310991733867b6c5df362441cb",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A5-L2-02-E2.json",
+        "bytes": 3072,
+        "sha256": "c92de899b4e11b1befc5e31aa754f49ec42e7b7726b61f3a7d9d7e4e3b88bdbe",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/A5-L3-02.json",
+        "bytes": 5437,
+        "sha256": "aa6a59e3b0414a7b1253d20ca205645e6cd01815f7967d898712936320d38de9",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L1-01.json",
+        "bytes": 2530,
+        "sha256": "c8bfe6141903592780c605f6b566f8c567adf64547e98d1490a661090c53e105",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L1-02.json",
+        "bytes": 2524,
+        "sha256": "ad9ef01ab0276d858a45dd4a9e7b15a99a9144d311a2fe1a9b8439d860ad0ffb",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L2-01.json",
+        "bytes": 2152,
+        "sha256": "fc7f5bf2d9f91f0985991a85115ee73f8dded9d04d9e94d0ce5f349fcb0907bd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L3-01-E1.json",
+        "bytes": 2852,
+        "sha256": "ad52ed73753eb349930bdd5ef72fc339fa1bc55f99d132bdc46b160554d69adb",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L3-01-E2.json",
+        "bytes": 2543,
+        "sha256": "f9f6dadafad9a744eb80e0fbafc7754dbe81d42ec62e0e40ab46cbf92d2b8f56",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L3-02-E1.json",
+        "bytes": 2978,
+        "sha256": "2c4cd735eb6ffffae64ee69a5f10435d7f9fffd7eee6dee094c9c053f8a494b7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B2-L3-02-E2.json",
+        "bytes": 3217,
+        "sha256": "24b7e469c9d24fb36bc5261ef3f8779d3549c3f512edf5493870381e0fcca72f",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L1-01-E1.json",
+        "bytes": 3080,
+        "sha256": "ecc4da625cd892e35492f3010c8cc3599b3b83e59d11908af373132b197f93ad",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L1-01-E2.json",
+        "bytes": 1980,
+        "sha256": "2dce2a160ca2f0278195c8c02b9c80d72e29955e0b4e9637c89c35c8d601699d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L1-02-E1.json",
+        "bytes": 3692,
+        "sha256": "1362e3528e9a2c71a608ad34c79343f6a9d1221fea021181b2dfa74d3f520fd7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L1-02-E2.json",
+        "bytes": 2875,
+        "sha256": "de56fab32e59f2b7c4795636c79b3a1e8beb4c44f77de9d044c5779a722b11d3",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L2-01-E1.json",
+        "bytes": 2548,
+        "sha256": "b4cfbdc2554afceedb87979281cd05831d3a732fe1c3affa38241cd82554adac",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L2-01-E2.json",
+        "bytes": 2532,
+        "sha256": "63d0e42981d824c33f4d6931c9d26fcc4827cb1d485dbfd526865d50872d1697",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L2-02-E1.json",
+        "bytes": 1732,
+        "sha256": "19cf5f8475f42721ab22abacb4ecf6c983abe120cacc8b17906c56947cfb261c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/B3-L2-02-E2.json",
+        "bytes": 2192,
+        "sha256": "daf7f8e72819645692ce3eefea5bd8da15231fecf753c81db8e0d230f430f602",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C1-L1-01-E1.json",
+        "bytes": 1687,
+        "sha256": "af95bd43b1e68f40aad02e3fff9a10ce47b81340f553d11b6db9c327185e9ba1",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C1-L1-01-E2.json",
+        "bytes": 2794,
+        "sha256": "ca25c4e399add669b162b313c7b49b1356733a4cac2b9eac6e3bb703b3abcea0",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C1-L1-02-E1.json",
+        "bytes": 2866,
+        "sha256": "4231619adbee813c7d23f1cd1a73fad28cc5e7e19a55395d5ac64f45d0c75861",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C1-L1-02-E2.json",
+        "bytes": 4166,
+        "sha256": "bce65055bc38da11d9d3247d56260a09e49a241b1bee310abe55c153ce21c3a0",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L1-01-E1.json",
+        "bytes": 5279,
+        "sha256": "0ebc109d1bf8f6b7b531884c9b1f6a2f102d0f2f09ea2eec9b0a824bc9fa7090",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L1-01-E2.json",
+        "bytes": 5219,
+        "sha256": "3de643db80230a107b7f0ea793ac4d8f6280b8df91b86561d8978fb9ae3236dd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L1-02-E1.json",
+        "bytes": 5124,
+        "sha256": "588b75841f29b6b0cb8c4157fe638759c9f4caf1542ec4994c605d8f91860fb0",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L1-02-E2.json",
+        "bytes": 5359,
+        "sha256": "64634fcfa2d81fe151d88d6c181b50dbd57b0330c3c24e180360126db9876ed2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L2-01-E1.json",
+        "bytes": 3491,
+        "sha256": "ea47c430a711ef0e99bdd20f6f6c8443f79b0dfc8885f0470bfe23570154d6ce",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L2-01-E2.json",
+        "bytes": 2317,
+        "sha256": "332aff98133b610507a5628d08cd23761290bdce8f5298aad0f5145b2d119891",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L2-02-E1.json",
+        "bytes": 2878,
+        "sha256": "346abca007a1bfe95b788fb6dcef7943b59b76e61db02387c0ccbee75e2ff027",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L2-02-E2.json",
+        "bytes": 4463,
+        "sha256": "c030130974bd9a388b4461f6fb60ee78cfe860e57b4ed5525b227a1ba138cf55",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L3-01-E1.json",
+        "bytes": 5256,
+        "sha256": "9672819c114a3a17c530ca9715949c32d60016ccdfc6a262489f83a4b604fe1f",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L3-01-E2.json",
+        "bytes": 4743,
+        "sha256": "9eeff43fe5d57286738b6f7697663af94c9f3234dfb48fd4ffedbb9b08be33a2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L3-02-E1.json",
+        "bytes": 5249,
+        "sha256": "4f2b452285b97df09a2872eaa64dcbd9a729989591e6839d5f1bca7a11535620",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C2-L3-02-E2.json",
+        "bytes": 3883,
+        "sha256": "8542a2681d838e9605b2e301c7a20a80049a617952cbce3e0463c67dbbace1b7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L1-01-E1.json",
+        "bytes": 3037,
+        "sha256": "e8df165c8b6f7721fa9f584e4487b354ef51ba59e3b6f4c76180956830d42e36",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L1-01-E2.json",
+        "bytes": 3215,
+        "sha256": "e8cf48500d4705f9e06ac91206d5d2c8e91a4ab0f0cdd513eb7a186bf81a5c5d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L1-02-E1.json",
+        "bytes": 4083,
+        "sha256": "3702d9882129fa98a4bdc1c06b1b1e5c7bc19d53bd47a2fd936b9912dda0dcdb",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L1-02-E2.json",
+        "bytes": 4073,
+        "sha256": "8df29b78f25cf45e1647f5c592ee7663c996607a00bee06b811c2d9b1be76547",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L2-01-E1.json",
+        "bytes": 3461,
+        "sha256": "b0ebb8abdf0367eeeb0ba5eddb3a9839a8973b2d8389e05b1bbdb9607ab9c4ff",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L2-01-E2.json",
+        "bytes": 3365,
+        "sha256": "64131afcbf8abb5b00220e68760bec2595c181d84f3c4c484987b052f01b5131",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L2-02-E1.json",
+        "bytes": 3242,
+        "sha256": "76dbe8a22cfd6542b54a0c16d8812b7efbc08b4263a3cd2079cb18e371456f23",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L2-02-E2.json",
+        "bytes": 3979,
+        "sha256": "a200b2b2d964753fd87d64623cd6f62ffe1e76589d6cbd4766aa6405e36baf24",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L3-01-E1.json",
+        "bytes": 1503,
+        "sha256": "c4eb4f2da54db43835efa33490d884a89a8f80b2bede48455d2e5a36faded03d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L3-01-E2.json",
+        "bytes": 3211,
+        "sha256": "f30fa2d5a6a438508871b5146033f0144c837d7693759c15554f81e5b839bc04",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L3-02-E1.json",
+        "bytes": 3185,
+        "sha256": "9ce9868bba31335f823ddc3f2f59700e031e7e170ebb4e40171f26965bb51f9c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C4-L3-02-E2.json",
+        "bytes": 3192,
+        "sha256": "9840d990703cae5d7b3f621dde178bbee9d7ce44d2cf4f88ea6ba1aaf5a47de4",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C6-L1-S01-T1-E1.json",
+        "bytes": 3016,
+        "sha256": "642ba6bfbbad279f7b6fb73ebd1b7360a6ea533f985383773f2d708e5d93952c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C6-L1-S01-T1-E2.json",
+        "bytes": 3502,
+        "sha256": "d6339a37f8ae4527d3418c00dcf1503edb2758eba4773b95ed09e223c19397b4",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C6-L1-S02-T1.json",
+        "bytes": 2470,
+        "sha256": "d467b4f08f49f8bcec5535a4ec756e3795ff6bb45e1e90e8a6e7b0cb4c587996",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C6-L1-S02-T2.json",
+        "bytes": 2045,
+        "sha256": "6c335352a8c65674905dc228592b276b81d563a0139cf48b32c8fb8c6fb2808e",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/adaptive/results/C6-L1-S02-T3.json",
+        "bytes": 2546,
+        "sha256": "93602b738f9de602ffb193f39651658943890e5aeca0c4a7a4255dbc5ac02394",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/history.sqlite3",
+        "bytes": 942080,
+        "sha256": "81a7c1ca7bc85fb8f4dd81d52f95ca24f0f8c020f9b784859b203c1a18030410",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L1-01-E1.json",
+        "bytes": 3456,
+        "sha256": "50cd803e7c2f30468553dc7f53daafc67ed03e77983e58445a2665d704181c9b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L1-01-E2.json",
+        "bytes": 3842,
+        "sha256": "ee84f64744e08a00f4dc243a72d3e653080aa02cd062edd71342a35a0da2586c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L1-02-E1.json",
+        "bytes": 3162,
+        "sha256": "f5d16b26b93bf224ce4844c8ee82a249f0713d4213491d14296b1fbdeed28f2f",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L1-02-E2.json",
+        "bytes": 2991,
+        "sha256": "ecc0cbe643396dbcb0556fe6539f384dbf8423778205978e13ceeb90188c9a30",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L2-01-E1.json",
+        "bytes": 3504,
+        "sha256": "078319e1ac987f35564c8ddef25e1afd2f1556e49cd0b018b1a22fe806093142",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L2-01-E2.json",
+        "bytes": 5294,
+        "sha256": "8bf77bcad579d6e145ad33c4a2eebabf97eb376dd958af7478003d848c7cebdd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L3-02-E1.json",
+        "bytes": 2407,
+        "sha256": "ce499a5bbf595a3ca3dc8503b55b5423be5a6813eaa458ee3785161453e6f6dd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A1-L3-02-E2.json",
+        "bytes": 2667,
+        "sha256": "e4ba6ec9426ff5bbda0c783c79e4d58b51c04435dc15d94db16de112214f09d6",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A2-L1-01-E1.json",
+        "bytes": 5569,
+        "sha256": "44b43d6716aafbf726c7b943472d18988f7bf057ac1497207f71976e8af19f57",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A2-L1-01-E2.json",
+        "bytes": 3197,
+        "sha256": "6ac5ab28487d5a9cbda7758f866cf0010eab3094c46ac975ac7a928ba28b3b6c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A2-L2-01.json",
+        "bytes": 3488,
+        "sha256": "ead0e52376f23d853091498024abf75e8da6ce0836e8fe16a48bff6dda6f909d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A2-L2-02-E1.json",
+        "bytes": 7733,
+        "sha256": "a7dd21ef7f7635c4256fa17647f215422183c26d7879f5dee8f2fbb3dcc0409b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A2-L2-02-E2.json",
+        "bytes": 4479,
+        "sha256": "2e061cbd477d3fc73963ad8421d0f2fb0833cbc173594115394d1a4d85fed44e",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A2-L3-01.json",
+        "bytes": 2694,
+        "sha256": "e32d1b6c0fff41084b2f050263d1c4521d683b6ce10cd08899815ffbadca9fb5",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A4-L1-01.json",
+        "bytes": 2177,
+        "sha256": "e6fc6a53ba3406a053df6d82fa4023d9fb5ca994a0541d77ee9ba8650dce7653",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A4-L1-02.json",
+        "bytes": 2276,
+        "sha256": "02d2c50bbf748ba528e86b19ea19c33712628cea2a043d55f8bb93b27635a296",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A4-L2-01.json",
+        "bytes": 3027,
+        "sha256": "859256078f0d0f8e68bcd9de7967f5126cf95c6a38ae9e47ab853a1f362c305b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A4-L2-02.json",
+        "bytes": 2519,
+        "sha256": "69b916a4bbad414677d96d89a2162bfcea56f19a6c0b046748e621009e903161",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A4-L3-01.json",
+        "bytes": 1601,
+        "sha256": "c419f6f1e5954bd9753c279d6001a592699707f5618b914c4d463afe09b7aa59",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A4-L3-02.json",
+        "bytes": 1481,
+        "sha256": "62be8e86d299db8ce23028cfcda53db3d04bcaf5f7feae0f4b90604a64313aff",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A5-L2-01.json",
+        "bytes": 4095,
+        "sha256": "0cfd5c12e6dbb8f7b5e57559725a09a741fea5734636f87692a8c2f9285a2427",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A5-L2-02-E1.json",
+        "bytes": 2981,
+        "sha256": "ac979f0ea75cbc02e5aab3a9d111473b0e6aa63831b905934cae252b6f11fcd7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A5-L2-02-E2.json",
+        "bytes": 3065,
+        "sha256": "e81798ab2390a6e51c72167cc94bbb5aa0193698da0e76c513a742fb8bdfb741",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/A5-L3-02.json",
+        "bytes": 5950,
+        "sha256": "5a706f7e0ace9862654d8d43d502cfcff022f13d498ee75a2a877f96cf78c432",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L1-01.json",
+        "bytes": 2022,
+        "sha256": "cfb5ac6a0bfcb5b3beee9c85ed24e4cdec81e96ccf9497066a5f2d9fcfa1be5b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L1-02.json",
+        "bytes": 1821,
+        "sha256": "6a83eac394b8ba00f6c62fe7001e185b905282aa0e3ace218b30542800b867ad",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L2-01.json",
+        "bytes": 2047,
+        "sha256": "baee2cae015f91296767ea17c6854b46c016d8f22cc0ca18a56dd679f5e34548",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L3-01-E1.json",
+        "bytes": 2243,
+        "sha256": "332509d5143a6d3807a21222459b83b302a9c4867a2f194a95fe4ba49e5bafc1",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L3-01-E2.json",
+        "bytes": 2418,
+        "sha256": "f71b36ac1d27b72c867116b1e09163998a2c74d95258517686981346289d740a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L3-02-E1.json",
+        "bytes": 1862,
+        "sha256": "18cb76439345cd6fc7ea8f8f9f33d09f0ea0ab5c2e6ee2f775f3d0dea31728ce",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B2-L3-02-E2.json",
+        "bytes": 1375,
+        "sha256": "1a177dcf214b3dbd56e07dce1f6ff49cecf75cf6a4ec6abc016a0ff258ed9820",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L1-01-E1.json",
+        "bytes": 723,
+        "sha256": "adbceeddf5e27af27ed1ba9ab28aedefd18639c841ad058309d6e560f58a256f",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L1-01-E2.json",
+        "bytes": 1912,
+        "sha256": "0c251e6f99f52531ba9855a0170906467931489c2d4f04160e8425fef4a26639",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L1-02-E1.json",
+        "bytes": 1544,
+        "sha256": "22cb6db4bbf0b940a7211d249640e9d65d61640b0e2ff2098c3a836d59eee6a6",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L1-02-E2.json",
+        "bytes": 2957,
+        "sha256": "1c4c7548055b4a7453dcf828dbfef68b81f3cc160196f351a5bda4ab14d8fe35",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L2-01-E1.json",
+        "bytes": 1234,
+        "sha256": "1fae9de6d217030ffd29b8067947ac19c865c0b4fdff36079feec09d7292257d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L2-01-E2.json",
+        "bytes": 1969,
+        "sha256": "1520888751f069669288663086d2b3ae91bbd926e19f6091874efbd0063b9565",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L2-02-E1.json",
+        "bytes": 2097,
+        "sha256": "21525686c2deb88585aa704e4ef6804e7f81526394b987b23195bad24b73f57a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/B3-L2-02-E2.json",
+        "bytes": 2160,
+        "sha256": "721f2f28a775435b06d19f42756e5a1ad96da1e10ba3ccdf75496c8b51d36213",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C1-L1-01-E1.json",
+        "bytes": 1205,
+        "sha256": "50a3688d3b29d409f19b5c07917fd806612f5216bd9b79f2c552a494a786d82a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C1-L1-01-E2.json",
+        "bytes": 1800,
+        "sha256": "de3ad05c6aae343015066830e5db37060ca7ab813e6fd093150dccdae07f94a2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C1-L1-02-E1.json",
+        "bytes": 3402,
+        "sha256": "8fe9c21bee71fd329cdffbf3d8c41fad65888266656bc460f6d1b447229fbb4f",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C1-L1-02-E2.json",
+        "bytes": 2820,
+        "sha256": "ded26a5149ac4c6d0a48a29b5061b8d9f331e1984b2c0162a055e464e1f085d2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L1-01-E1.json",
+        "bytes": 3289,
+        "sha256": "d471de4242debe4e6c08c0b1d041aa2450c543cc6f09d54b8b04d9c2ffd164de",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L1-01-E2.json",
+        "bytes": 1852,
+        "sha256": "84aab740cf0c7efddeaf5d9cfc3a2b81c272906ddcdbb811886abeef4838f7b2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L1-02-E1.json",
+        "bytes": 3146,
+        "sha256": "7b59d372ba8bcd735ae57e2a2bac3e78198d5fc66c0269b0de2f916322a3dc12",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L1-02-E2.json",
+        "bytes": 3162,
+        "sha256": "23850aa3a2caaf68b79201cf5da1cd8f5a3256f523b4b2d981df3fe0d55475c2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L2-01-E1.json",
+        "bytes": 2472,
+        "sha256": "14028535cd2252ed06827e75d51f2a88306b99f47625d247e046325a09ff8d3a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L2-01-E2.json",
+        "bytes": 1857,
+        "sha256": "6d6ff35076db16d98d1e7c7d63da9bc80409bea6c24753d6a97b265f0b1a9bbf",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L2-02-E1.json",
+        "bytes": 3296,
+        "sha256": "0db5b065459c61cb3adaa5989d59e47c9428087b3afd57d1c939899e6c0de2c5",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L2-02-E2.json",
+        "bytes": 2990,
+        "sha256": "70420054c7cb9822b151c44ba5284943f31abd765331d59b10dadd50c35cc20b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L3-01-E1.json",
+        "bytes": 3288,
+        "sha256": "6b782deab331991d5965c4e0570a843ec4a21fae466944c6687cb61d56d67b48",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L3-01-E2.json",
+        "bytes": 2276,
+        "sha256": "9a0694fd4cae9ae45c72d3c9ec300709004189a8a3adb3aaba3843c5d9847ec1",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L3-02-E1.json",
+        "bytes": 2138,
+        "sha256": "166ef5af8773c117b4f6e5904650d4f4401549bb89c462a886ad54bda2a8f28b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C2-L3-02-E2.json",
+        "bytes": 2942,
+        "sha256": "8984749252f4b55fe1e113035fa6f9dd0b5506235550d208f342e7e62273c926",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L1-01-E1.json",
+        "bytes": 1752,
+        "sha256": "4eeec1c979d00f2ed90bd6f9d00b7e7d2b7c0dfe833c068e175f5e2eca288703",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L1-01-E2.json",
+        "bytes": 2035,
+        "sha256": "1d1d2cb7de5030bf3f23d3fba555986c3513a4f171de9133b9f9ad82c49aff7d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L1-02-E1.json",
+        "bytes": 2259,
+        "sha256": "1582c38572e0dadf83f6a91e67f913a20e1a6b29799589df738b300751fde4fd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L1-02-E2.json",
+        "bytes": 1941,
+        "sha256": "340365b6466144e8bbbead1409d842c8bf07fcaa8414126e4dcecdb3854ce3a6",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L2-01-E1.json",
+        "bytes": 2737,
+        "sha256": "cf858c204d6921cb67a2239eebd0099faae4d1109714b80f2dc37b982fc2b591",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L2-01-E2.json",
+        "bytes": 2702,
+        "sha256": "5dd521eb201c325310c07b600cd2634b8c66b847e2dc5bf10185ffd0d125208e",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L2-02-E1.json",
+        "bytes": 2579,
+        "sha256": "a8c1fe019215347b1c84513d6e5df79dca5527f10742cd0f88ff2bc98c4b4b3b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L2-02-E2.json",
+        "bytes": 2478,
+        "sha256": "fa5951885c86555500c07c152c0de7f267800fdf62ef650f1e0871f4300670da",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L3-01-E1.json",
+        "bytes": 1547,
+        "sha256": "5513063d73b9010b0ae182e08929e9907b38d59a5c517175e9c863444de55c65",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L3-01-E2.json",
+        "bytes": 1978,
+        "sha256": "77f8cbf230ad05350b8f72807bba87bfe1cfa4439f7745b5989b650b210d5384",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L3-02-E1.json",
+        "bytes": 2026,
+        "sha256": "8bb8c92a117d05aeabcec9a05dd848b6f4ea3cf04ad13fc8b442ce3b005e17c0",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C4-L3-02-E2.json",
+        "bytes": 2113,
+        "sha256": "2e5f553f15f67f1fff4ebb2f09cd69b64a3b9a8df87a1247ed8948a3390f26b7",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C6-L1-S01-T1-E1.json",
+        "bytes": 3390,
+        "sha256": "ca67d52bebdfbe50b42573b20f3f8db28484347b3e189422bfbead4997417745",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C6-L1-S01-T1-E2.json",
+        "bytes": 3774,
+        "sha256": "2308bf3e0b1467531fa4bd8d68ee46002713508c206527418e36627188e46799",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C6-L1-S02-T1.json",
+        "bytes": 2466,
+        "sha256": "297331230b1cd0c0aca68b3c5a074bb2042a7c5104e90e678de2eae214487b38",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C6-L1-S02-T2.json",
+        "bytes": 1841,
+        "sha256": "dfb5c676588403abe2577bae263e5f09948be3274e6610382806cf545c63e493",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/baseline/results/C6-L1-S02-T3.json",
+        "bytes": 3563,
+        "sha256": "d6bd201eef3e2a98c9076503752b0e0b35e6962ddf1b49d1a7c0d082108e7b75",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/business.yaml",
+        "bytes": 1236,
+        "sha256": "af32faaf2c249ad6bec06bbb95ef1b5cf5491a8ef226b5f2be03b4bc24d23f6b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/config.json",
+        "bytes": 55431,
+        "sha256": "15328f7d98c8f3e4e77389d63e6095d83e799f83989d6576f0a2afb3129c32eb",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/history.sqlite3",
+        "bytes": 2260992,
+        "sha256": "50a830d410d0b393c54e40f110191a9406c2ecdc029a4d9099d638f0bbb7a48b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L1-01-E1.json",
+        "bytes": 3406,
+        "sha256": "2859a8b38f5d6dfbcd4356b78b885d968b95f084a683e1da82bac798b12175a3",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L1-01-E2.json",
+        "bytes": 3487,
+        "sha256": "2dc94a315d1a1d521c47e2bfdd4198b43b5a9d9fe92fda86ab1c7bef88565bbd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L1-02-E1.json",
+        "bytes": 3250,
+        "sha256": "f13347cb1c30da5895a3c91d3c2337879ddf8bfbd71331ac27d263fce412a953",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L1-02-E2.json",
+        "bytes": 3350,
+        "sha256": "11d1833343003b56c8c7f63681ae712eeb9aa7d6c1d3dec21e3b5b156b58178a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L2-01-E1.json",
+        "bytes": 3375,
+        "sha256": "2f23c3ce309f9c0d458a21af0fcd754a7f82246a012bd9699bd1829ab907c721",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L2-01-E2.json",
+        "bytes": 5045,
+        "sha256": "5903234ebc8d3040292fdabfbbfafee473c86e6576be9b1e4a03e9d9667ecc79",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L3-02-E1.json",
+        "bytes": 2684,
+        "sha256": "243ea49dd90b78960654b87a2855539432db7e1ded4da0270961506952f8fe92",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A1-L3-02-E2.json",
+        "bytes": 3091,
+        "sha256": "b183bc736945f4982d4d65dd4c1b16f4bcc703895c7f3aff5300c37f549a5dc1",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A2-L1-01-E1.json",
+        "bytes": 4709,
+        "sha256": "6bc82b3f39596d7a5206aee455316a474fe4bd66ff4fb669d5feaab200d56ffd",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A2-L1-01-E2.json",
+        "bytes": 4976,
+        "sha256": "7459fa84306cd8741e2cacac366fd3389e588639df85e1eea5c582ad2d34d128",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A2-L2-01.json",
+        "bytes": 3060,
+        "sha256": "9b87749b73746ad86c1f531c16a6d1622437d5e21915002f4c53a32c2f45a365",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A2-L2-02-E1.json",
+        "bytes": 5095,
+        "sha256": "e09b6ffeb3cc74d50c28a0fe2d60001ce444829cbefac71ac3eaab41babd05d2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A2-L2-02-E2.json",
+        "bytes": 3103,
+        "sha256": "8c5effee562156701161de20b2357277343a04d5cf0f0eb971e28a653932dce9",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A2-L3-01.json",
+        "bytes": 5351,
+        "sha256": "19f8bcfda59f308ea179bfa862ea5cf4574144beaae1b71e5a1d77705b3f0411",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A4-L1-01.json",
+        "bytes": 2472,
+        "sha256": "271c25e76fdabe248412c8c0c23d2b09b87d690a8e6dfe60e021d1474fa8f70e",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A4-L1-02.json",
+        "bytes": 2472,
+        "sha256": "85af964ab1a69856cb977237216847b79a0dc78ba96ec647dbfed07d4c433435",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A4-L2-01.json",
+        "bytes": 3059,
+        "sha256": "ee474485413199b8c53accd5e944c5ece9fe0e9f2feedef501f01f2709795b5b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A4-L2-02.json",
+        "bytes": 3335,
+        "sha256": "26983ca0daaf9b66540538c540379ca977d471e18c50a6bd67d80c05dd489fde",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A4-L3-01.json",
+        "bytes": 1721,
+        "sha256": "a2f9978b1c9e36af90a216f30ce64f122269b435678ba89e17bd3f119a9636a9",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A4-L3-02.json",
+        "bytes": 1821,
+        "sha256": "c1579b095443249203a8285ef2aeeee27f534eadd31a166851145cce2a291737",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A5-L2-01.json",
+        "bytes": 3206,
+        "sha256": "0bdbed2066f9ed0f5af8f46dfed81245d59d778072d3d164736785655c718993",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A5-L2-02-E1.json",
+        "bytes": 2517,
+        "sha256": "ccef3d99d77a9b4170c42ee73ef8c887b4dad3585a590abfa1f6b7d5b688140f",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A5-L2-02-E2.json",
+        "bytes": 2167,
+        "sha256": "636c0847efe2f8ac0fe599ce89c850a6fdee405977e4a2b4ade92d0923967f90",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/A5-L3-02.json",
+        "bytes": 4247,
+        "sha256": "ef2b264f0b86c18c3d0be6bcf22d1405c991cde16c37a4af1992e9d708b398ac",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L1-01.json",
+        "bytes": 2699,
+        "sha256": "c2f2cd884229801a5108c5923a202571591b7900298d032d2335cb7465d64883",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L1-02.json",
+        "bytes": 2636,
+        "sha256": "e8db25284338012405f366831dc23b5d4ba62540786a9a84c6338714f0088952",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L2-01.json",
+        "bytes": 2648,
+        "sha256": "ce4a8ecd9ed31c4403b5f6b3caa9f17842b140a4c8646e11eb558d5d7665dea3",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L3-01-E1.json",
+        "bytes": 4352,
+        "sha256": "b67b068a21c176da47c429b6f23ff64e38dcd5629b527539306df2e22d965514",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L3-01-E2.json",
+        "bytes": 4371,
+        "sha256": "0249f8c52d02e4885ded993aa276f6afc0473dc2d86a4f367aea0ce753eeb636",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L3-02-E1.json",
+        "bytes": 1983,
+        "sha256": "938ccb2bf38e5b88c1a1b0c268a2eb06b7a42908246a616bd77e203592045618",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B2-L3-02-E2.json",
+        "bytes": 3076,
+        "sha256": "950b11a9b897a87cde185877ad54af71d2a000f890b45c1f9f2055087272a78a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L1-01-E1.json",
+        "bytes": 2228,
+        "sha256": "f4e772152f23c6302eb8890b34d883e71df58fb49abc69cdc179537eb9a3e0f8",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L1-01-E2.json",
+        "bytes": 2017,
+        "sha256": "a130039255700b451ae51111eda76d6191f028b8cf9bf165448e7916b9c51a46",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L1-02-E1.json",
+        "bytes": 2690,
+        "sha256": "202cb0f16b0054f81f3a08fed24256bfb32027f0c1599ca03e3d1c0a97502e0c",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L1-02-E2.json",
+        "bytes": 1927,
+        "sha256": "cddbae60057586e3f0122057874cb80c0ed0a9c3f7952571977364adf8d6df72",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L2-01-E1.json",
+        "bytes": 2391,
+        "sha256": "f83604131f3c2eebc25574c05f33c98af52e93a5a5480b30430f29362d7e224d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L2-01-E2.json",
+        "bytes": 2618,
+        "sha256": "7e17888402ce0aece95021987e5272b4b102b7505a624ee8a17a797d733d166b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L2-02-E1.json",
+        "bytes": 2257,
+        "sha256": "37bddcb162198c0fd54e312f16a93aa95327869677ed1fbc713704cd70ccb541",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/B3-L2-02-E2.json",
+        "bytes": 3083,
+        "sha256": "e5813b8e5e8c7931e60546841c694a6dca88b6524b694547905a4d348c4a8fbf",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C1-L1-01-E1.json",
+        "bytes": 1909,
+        "sha256": "44aac291e233c3ff28b4299f83fb1aff637afb4f960322c6703c63aa4e6d0f77",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C1-L1-01-E2.json",
+        "bytes": 3356,
+        "sha256": "27ed73a0b942b01dabf48a5cf66418364449d1dc1a97dce2f9b8ebee03b61e69",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C1-L1-02-E1.json",
+        "bytes": 4107,
+        "sha256": "cabf552b47bf5875aaf8f0b54d8006f8dd75f9ebb1b49e99cff00989ed7bbc72",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C1-L1-02-E2.json",
+        "bytes": 2325,
+        "sha256": "594927a3c82b27e2c6480141bfb3e5c0cbda8866e577c85c7c6e050d71d384f3",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L1-01-E1.json",
+        "bytes": 3120,
+        "sha256": "5e6881b933ca673fa5adb3a927a5a98c65f715e4ebdaf9d065b5fcfe572870b6",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L1-01-E2.json",
+        "bytes": 3429,
+        "sha256": "228cfa66cef775f7fd25e21ab5e0124fe46b12b463f0cffc2ff2088f5fe806d4",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L1-02-E1.json",
+        "bytes": 3119,
+        "sha256": "3b6c5fa3feee9e6191e64e56752e13f715674148d7135b293ce84c6cc956a49d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L1-02-E2.json",
+        "bytes": 2363,
+        "sha256": "f3759c8eb1d2cf1c6db2b516dfc74691e48d320c962f01537fa98d817b55efa4",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L2-01-E1.json",
+        "bytes": 2820,
+        "sha256": "a0fc9e3f7355fe91c41f0e2af99eac9f870be2ecd83607f58d06000d5b52b873",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L2-01-E2.json",
+        "bytes": 3790,
+        "sha256": "e4a723c30a10657339b635c24468b91363d91044f208e7a8901b50e2dbddedee",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L2-02-E1.json",
+        "bytes": 2399,
+        "sha256": "3014025707ab42dc6c338d214277b6330a30c71fba12f0ebca9c785bc0ff302d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L2-02-E2.json",
+        "bytes": 2599,
+        "sha256": "5c6c602d938c5a83a472520511043cd143d8aade83c3d3cde7b9ed01659edcab",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L3-01-E1.json",
+        "bytes": 3130,
+        "sha256": "239f3ef535a4c5d3a36752167e032c8117b1226ef55f4a16d54d5928798fa02a",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L3-01-E2.json",
+        "bytes": 2019,
+        "sha256": "59d67f435fa0180e34aa701560867fa764ba385370f8b349cd8a16bcb8564fcf",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L3-02-E1.json",
+        "bytes": 2068,
+        "sha256": "77896c4fa0aa0c86daa1045536bc0f5acdb95f6675f5f3de225004a360afe5a5",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C2-L3-02-E2.json",
+        "bytes": 2879,
+        "sha256": "7d3d69b83336544f014f1cfeb2d5f1e8f3154d7e80b1d8a6825d1340461653c2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L1-01-E1.json",
+        "bytes": 3043,
+        "sha256": "738ec7393c7c26a38f4bcd352e5ff6da5c067a4350601d25b4e1e4af3a9a9b3b",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L1-01-E2.json",
+        "bytes": 2255,
+        "sha256": "ede50ab49929382d5cc71162d43b7bff49902188a77ebc96e4eb337b3b6ca828",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L1-02-E1.json",
+        "bytes": 2245,
+        "sha256": "731145de2fad6a6812443a1c09863df2d6ab248e22cf35fe21311a2b82fecd22",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L1-02-E2.json",
+        "bytes": 2659,
+        "sha256": "2e8772f92b825203e6f2c981d6dceb7c32594da079352cb5408356266f921a7d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L2-01-E1.json",
+        "bytes": 3580,
+        "sha256": "04d93545b5aa308decc251361c3634764fa282094cf411f0a80b35b2ebf60fac",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L2-01-E2.json",
+        "bytes": 2709,
+        "sha256": "b72c037f84b443baf9d412d521ee0f8ee4e8ef7a13962ae7493cb31f4dae25b8",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L2-02-E1.json",
+        "bytes": 3125,
+        "sha256": "a85ffc29f8541e9b65e44f6abf1d28998c300c42dd89bacf7fcf69fcc6563e81",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L2-02-E2.json",
+        "bytes": 3221,
+        "sha256": "7802de41b771d582b4c76bd777774c2b8c4c580687f5518a363b60d394def543",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L3-01-E1.json",
+        "bytes": 2780,
+        "sha256": "a1f52380525794c2fdb252437cc49e66c92a83647fdaafa10044799e42426171",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L3-01-E2.json",
+        "bytes": 2699,
+        "sha256": "0c893c67dc40444adadffb43ba52928b877639526a45e354a0bf20ac64d20bee",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L3-02-E1.json",
+        "bytes": 2633,
+        "sha256": "fae66700795983773194b769639910dcdc1f3ca594c083d90e3009e5c0632844",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C4-L3-02-E2.json",
+        "bytes": 2727,
+        "sha256": "0e8abd94602dc586f85b894943b107a51fb3174a0225a6ee063752edb7cf8c40",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C6-L1-S01-T1-E1.json",
+        "bytes": 2804,
+        "sha256": "936527bf2c7477c0a89fe0065c92b28c6865c6fe7cd70cbe0c4cb2f5ff616fb8",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C6-L1-S01-T1-E2.json",
+        "bytes": 2711,
+        "sha256": "45e255c1d3909ac3289bfd769dbd3844a9d581a846f077f6b10701bc48b11025",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C6-L1-S02-T1.json",
+        "bytes": 2723,
+        "sha256": "888c35ea9c3a6626d567ea038741a906905397934fbd77a5d66ee8714fb78e5d",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C6-L1-S02-T2.json",
+        "bytes": 1839,
+        "sha256": "11de66e9f888a1bc6647459465bb5d01c94c1dc4b0639103a61d6e212e0cccf3",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/fifo/results/C6-L1-S02-T3.json",
+        "bytes": 2793,
+        "sha256": "127bf587d12ad4c32b54b00a5573d26e84ac9c63468211ac6eea118e49d60a24",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/inputs/database_schema.sql",
+        "bytes": 10443,
+        "sha256": "ea965ddd280291729ae6ef41dbe0262f98df059f5d485c2535ec2c44938987e9",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/inputs/field_mapping.json",
+        "bytes": 4578,
+        "sha256": "917a72c1a97eb211aa4900a844c2f8523bf1588d9869db4b5b3d9f05326b60c2",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/inputs/manifest.json",
+        "bytes": 2452,
+        "sha256": "4d24f7855d2414020b9a839fced48504a8dcc062ea5d1217e8e7a18d3892c4d8",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/inputs/rules.txt",
+        "bytes": 1215,
+        "sha256": "0cc333beadbcdde111a59346b76f13c4260f53ddd1e107323a434c13ceace4bf",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/pool.json",
+        "bytes": 144,
+        "sha256": "3870d77ee61c02dcac92d4b48682f6b41e205cbf0382ba4aabcdb3aeb3ee6474",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106/retrieval.json",
+        "bytes": 898,
+        "sha256": "fbc8208862453f2582d2c42552756d7ddc5954cca85d4409344fc6f3384ae603",
+        "kind": "original_run"
+      },
+      {
+        "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/bundle_manifest.json",
+        "bytes": 3595,
+        "sha256": "918784f9fbd971b09f2c345fd3699530046033d97cb04a66c69ec9661c0afee9",
+        "kind": "supplemental_material"
+      },
+      {
+        "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/expansion_map.json",
+        "bytes": 152017,
+        "sha256": "9e60033e2005f1f347513db4d5f1b0d46fd5ca9a97d379c19c471f65c49f15a9",
+        "kind": "supplemental_material"
+      },
+      {
+        "path": "data/evaluation/psu_memory/enterprise_v30_120_v1_0_2_natural_v0_3_0_expanded/intent_contracts.json",
+        "bytes": 133660,
+        "sha256": "86626065bab8781efd94c6dd48855522dae6447fba3e8eb63a40271e5c60dfe5",
+        "kind": "supplemental_material"
+      },
+      {
+        "path": "data/reports/psu_memory/subset-v2-rescore-20261106.json",
+        "bytes": 195725,
+        "sha256": "596fd17530d2c1a6dbe97f824d469ff45ee9a6dba5badd2de5a332327f3bc8d8",
+        "kind": "offline_rescore"
+      },
+      {
+        "path": "docs/psu_memory_歧义口径与下一步_20261019.md",
+        "bytes": 3613,
+        "sha256": "65e909c8ac1dfc1898c9416b2e5c8724d0e898b06b8df63d3c553f4945da358d",
+        "kind": "supplemental_material"
+      }
+    ]
+  },
+  "published_reports": [
+    {
+      "path": "archives/dev_v1.1/summary.json",
+      "bytes": 16465,
+      "sha256": "fd6549f9d42d20e08fe6861f412c7891f8319e82e2a6bda009f79172b52935ea"
+    },
+    {
+      "path": "archives/dev_v1.1/subset-v2-rescore-20261106.json",
+      "bytes": 195725,
+      "sha256": "596fd17530d2c1a6dbe97f824d469ff45ee9a6dba5badd2de5a332327f3bc8d8"
+    }
+  ],
+  "provenance": {
+    "original_run": "data/derived/psu_memory/validation/natural-v030-subset-v1-20261103-093106",
+    "original_run_config_sha256": "15328f7d98c8f3e4e77389d63e6095d83e799f83989d6576f0a2afb3129c32eb",
+    "offline_report": {
+      "path": "data/reports/psu_memory/subset-v2-rescore-20261106.json",
+      "bytes": 195725,
+      "sha256": "596fd17530d2c1a6dbe97f824d469ff45ee9a6dba5badd2de5a332327f3bc8d8"
+    },
+    "offline_report_source_config_sha256": "15328f7d98c8f3e4e77389d63e6095d83e799f83989d6576f0a2afb3129c32eb",
+    "original_file_bytes_preserved": true,
+    "source_paths": "原 JSON/YAML 与来源材料中的绝对路径仅作为历史来源记录保留。新机器运行应使用当前 README 和运行配置，不直接复用历史运行配置。",
+    "sqlite_handling": "仅按文件字节归档和计算 SHA-256，未打开或查询 SQLite。",
+    "scoring_scope": "原在线运行使用 expected_subset_v1；本阶段报告是对同一批保存输出的 expected_subset_v2 离线重评，未重放经验演化。",
+    "execution_boundary": "归档工作仅进行文件读取、复制、压缩、哈希与既有结果汇总。模型请求、数据库操作、独立测试及重评由使用者执行。"
+  }
+}
