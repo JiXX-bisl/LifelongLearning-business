@@ -97,6 +97,14 @@ class DirectRunnerTests(unittest.TestCase):
             "retrieval_config": self.config["retrieval_config"], "pool_config": self.config["pool_config"],
         })
 
+    def test_v2_refuses_to_resume_v11_experiment(self):
+        self.prepared_fixture()
+        saved = read_json(self.run / "config.json")
+        saved["implementation_version"] = "dev_v1.1"
+        write_json(self.run / "config.json", saved)
+        with self.assertRaises(ValueError):
+            runner.run_condition(self.run, "baseline")
+
     @staticmethod
     def record(query_id, value):
         return {"status": "completed", "result_query_id": query_id, "answer": "实际回答",
@@ -151,7 +159,7 @@ class DirectRunnerTests(unittest.TestCase):
         self.assertEqual(saved["cases"], self.cases)
         self.assertEqual(saved["standards"], self.standards)
         self.assertEqual(saved["public_context"], self.public)
-        self.assertEqual(saved["implementation_version"], "dev_v1.1")
+        self.assertEqual(saved["implementation_version"], "dev_v2.0")
         self.assertEqual(saved["comparison_version"], runner.COMPARISON_VERSION)
         self.assertNotIn("comparison_contexts", saved)
         self.assertEqual(saved["pool_configs"]["fifo"]["strategy"], "fifo")

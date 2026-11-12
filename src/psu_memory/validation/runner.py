@@ -15,7 +15,9 @@ from .common import POLICY, load_cases, load_config, load_public_context, read_j
 from .comparison import COMPARISON_VERSION, compare_results, evaluate_result
 from .splits import select_cases
 
-IMPLEMENTATION_VERSION = "dev_v1.1"
+# The legacy comparator is retained, but shared pool maintenance now uses v2.
+# Refuse to resume v1.1 experiment directories under different selection rules.
+IMPLEMENTATION_VERSION = "dev_v2.0"
 
 
 def _validate_inputs(config):
