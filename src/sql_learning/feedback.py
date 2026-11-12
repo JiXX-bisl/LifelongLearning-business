@@ -21,6 +21,7 @@ from src.psu_memory.pool.pool_store import SQLitePoolStore
 from src.psu_memory.pool.maintenance import run_pool_maintenance
 from src.psu_memory.retrieval.indexing import OfflineIndexBuilder
 from src.psu_memory.integration.direct_update import DirectUpdateError, DirectUpdateIntegrityError
+from .comparison import COMPARISON_VERSION
 
 
 def _json(value):
@@ -170,7 +171,7 @@ class TurnFeedback:
             self._refresh(record["turn_id"])
         return self._result(record["turn_id"])
 
-    def evaluate(self, turn_id, verdict, *, policy_version="row_multiset_v1"):
+    def evaluate(self, turn_id, verdict, *, policy_version=COMPARISON_VERSION):
         """Trusted evaluator submits PASS/FAIL/UNKNOWN; gold never enters memory."""
         if verdict not in ("PASS", "FAIL", "UNKNOWN"):
             raise ValueError("verdict must be PASS, FAIL or UNKNOWN")

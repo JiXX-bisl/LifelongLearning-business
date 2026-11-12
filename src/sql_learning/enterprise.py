@@ -6,6 +6,7 @@ import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from .comparison import COMPARISON_VERSION
 
 from src.enterprise_dataset_v30.schema import (
     COLUMN_TYPES, FIELD_MEANINGS, PRIMARY_KEYS, PUBLIC_RULES, TABLE_DESCRIPTIONS,
@@ -114,7 +115,7 @@ def prepare_enterprise(tables_path, output_dir, *, namespace="enterprise_v2_smok
         "source_tables": str(source), "source_sha256": _sha(source),
         "data_version": public["data_version"], "row_counts": counts,
         "sqlite_value_roundtrip_verified": True,
-        "score_protocol": "row_multiset_v1; ordered=True; positional columns; duplicate-sensitive",
+        "score_protocol": COMPARISON_VERSION + "; ordered=True; required-column projection; duplicate-sensitive",
         "group_labels": groups,
         "artifacts_sha256": {name: _sha(output / name) for name in ("database.sqlite3", "public.json", "private.json", "private_sql.json", "comparison_policy.json")},
     })

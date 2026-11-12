@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import sqlite3
 from urllib.request import urlopen
+from .comparison import COMPARISON_VERSION
 
 GEOGRAPHY_COMMIT = "5050bad2309a93636ea4788d3660c9202bf11e0e"
 GEOGRAPHY_REPOSITORY = "https://github.com/jkkummerfeld/text2sql-data"
@@ -155,8 +156,9 @@ def prepare_geography(source_dir, output_dir, *, split="dev", split_by="query", 
                 "selected_ids": [case["public"]["id"] for case in selected],
                 "selection": "source_order_prefix" if limit else "complete_split",
                 "table_rows": counts, "reference_errors": errors,
-                "scoring": {"version": "row_multiset_v1", "ordered": False,
-                            "column_correspondence": "position", "duplicates": "preserved",
+                "scoring": {"version": COMPARISON_VERSION, "ordered": False,
+                            "column_correspondence": "explicit_or_unique_name_else_equal_width_position_or_global_projection",
+                            "extra_columns": "ignored_after_projection", "duplicates": "preserved",
                             "numeric_tolerance": 0,
                             "purpose": "new execution-result baseline, not published SQL matching accuracy"},
                 "split_assignments": {case["public"]["id"]:
