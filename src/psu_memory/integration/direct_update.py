@@ -12,8 +12,6 @@ from ..evaluation.evaluation_evidence import SCHEMA as EVALUATION_SCHEMA, attach
 from ..evaluation.quality_store import SQLiteQualityStore
 from ..history.history_adapter import history_from_query_result
 from ..history.history_store import SQLiteHistoryStore
-from ..pool.difficulty import DifficultyAssessor
-from ..pool.difficulty_llm import LocalDifficultyClient
 from ..pool.maintenance import run_pool_maintenance
 from ..pool.pool_models import PoolConfig
 from ..pool.pool_store import SQLitePoolStore
@@ -166,12 +164,9 @@ class DirectExperienceUpdater:
         self.pool = SQLitePoolStore(self.path, record_runs=False)
         self.history = SQLiteHistoryStore(self.path, record_runs=False)
         self.quality = SQLiteQualityStore(self.path, resolve_path=resolve_project_path, record_runs=False)
-        self._difficulty_client = None
 
     def close(self):
-        if self._difficulty_client is not None:
-            self._difficulty_client.close()
-            self._difficulty_client = None
+        """更新器无常驻模型；检索器由宿主统一关闭。"""
 
     def apply(self, case, record, record_path, query_id):
         try:
@@ -212,12 +207,9 @@ class DirectExperienceUpdater:
     def _apply(self, historical, query_id):
         execution_id = historical.task.task_id
         _save_candidate(self.history, self.quality, historical, query_id)
-        if self._difficulty_client is None:
-            self._difficulty_client = LocalDifficultyClient.from_yaml(self.model_config)
         run_pool_maintenance(
             quality_store=self.quality, pool_store=self.pool,
             namespace=self.namespace, data_version=self.data_version,
-            assessor=DifficultyAssessor(self._difficulty_client, cache=self.pool),
             config=self.config, schema_context=self.schema_context,
             execution_ids=(execution_id,), strict=True, refresh_quality=False,
         )

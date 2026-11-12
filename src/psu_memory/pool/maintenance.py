@@ -1,4 +1,4 @@
-"""本地经验池批量协调；复用现有评价、分类、难度和选择规则。"""
+"""本地经验池批量协调；复用现有评价、分类和质量选择规则。"""
 
 from __future__ import annotations
 
@@ -81,8 +81,8 @@ def run_pool_maintenance(
     """种子准备和在线更新共用同一标注、选择流程；仅返回简要状态与成本。"""
     if quality_store.path != pool_store.path:
         raise ValueError("质量存储与经验池存储必须使用同一候选库")
-    if not sync_only and (assessor is None or assessor.cache is not pool_store):
-        raise ValueError("准备标注必须提供以本次 pool_store 为缓存的 DifficultyAssessor")
+    if assessor is not None and assessor.cache is not pool_store:
+        raise ValueError("可选 DifficultyAssessor 必须以本次 pool_store 为缓存")
     if limit is not None:
         require_nonnegative_int(limit, "limit")
         if not limit:
@@ -111,6 +111,7 @@ def run_pool_maintenance(
     usages = []
     cache_hits = changed_annotations = errors = 0
     prepared_ids = []
+    difficulty_errors = []
     for index, entry in enumerate(chosen, start=1):
         identity = entry["identity"]
         progress_base = {"index": index, "total": len(chosen),
@@ -124,14 +125,18 @@ def run_pool_maintenance(
             request = GroupingInput(**identity, question=content["question"],
                                     context_text=content.get("context_text") or "", sql=content["sql"])
             grouping = classify(request)
-            result = assessor.assess(
-                DifficultyInput.from_grouping(request, schema_context=schema_context),
-                admission_state="eligible", retry_failed=retry_failed,
-            )
-            usages.append(result.usage)
-            cache_hits += int(result.cache_hit)
-            if result.assessment.status != "assessed":
-                raise ValueError("经验难度尚未形成有效的 L1–L4 标注")
+            if assessor is not None:
+                # 可选标签失败不影响已核验成功经验的分组、准入或名额。
+                try:
+                    result = assessor.assess(
+                        DifficultyInput.from_grouping(request, schema_context=schema_context),
+                        admission_state="eligible", retry_failed=retry_failed,
+                    )
+                    usages.append(result.usage)
+                    cache_hits += int(result.cache_hit)
+                except (ValueError, RuntimeError) as error:
+                    difficulty_errors.append({"execution_id": identity["execution_id"],
+                                              "error_type": type(error).__name__})
             saved = pool_store.save_annotation(entry, grouping=grouping, difficulty=result)
             changed_annotations += int(saved["changed"])
             prepared_ids.append(identity["execution_id"])
@@ -152,6 +157,7 @@ def run_pool_maintenance(
         "preparation": {"selected_for_preparation": len(chosen), "prepared_count": len(prepared_ids),
                         "changed_annotations": changed_annotations, "cache_hits": cache_hits},
         "error_count": errors,
+        "difficulty_errors": difficulty_errors,
         "usage": _summarize_usage(usages, elapsed_seconds=perf_counter() - started),
         "sync": synced,
     }

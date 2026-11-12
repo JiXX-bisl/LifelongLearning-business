@@ -9,8 +9,6 @@ from ..evaluation.evaluation_evidence import _read_signals, attach_evaluations
 from ..evaluation.quality_store import SQLiteQualityStore
 from ..history.history_adapter import read_history_file
 from ..history.history_store import SQLiteHistoryStore
-from ..pool.difficulty import DifficultyAssessor
-from ..pool.difficulty_llm import LocalDifficultyClient
 from ..pool.maintenance import run_pool_maintenance
 from ..pool.pool_models import PoolConfig
 from ..retrieval.indexing import OfflineIndexBuilder
@@ -40,14 +38,10 @@ class ExperienceUpdater:
             resolve_project_path(evaluation_root) if evaluation_root is not None else None
         )
         self.quality = SQLiteQualityStore(self.path, resolve_path=resolve_project_path)
-        self._difficulty_client = None
         self.last_usage = zero_cost()
 
     def close(self):
-        """只关闭本更新器创建的客户端；检索器由宿主统一关闭。"""
-        if self._difficulty_client is not None:
-            self._difficulty_client.close()
-            self._difficulty_client = None
+        """更新器无常驻模型；检索器由宿主统一关闭。"""
 
     def _journal(self, historical, record_path, folder, *, metadata=None):
         folder = Path(folder)
@@ -324,19 +318,16 @@ class ExperienceUpdater:
 
         if decision["admission_state"] == "eligible":
             def maintain():
-                if self._difficulty_client is None:
-                    self._difficulty_client = LocalDifficultyClient.from_yaml(self.model_config)
                 pool = self.retriever.index.pool_store
-                assessor = DifficultyAssessor(self._difficulty_client, cache=pool)
                 return run_pool_maintenance(
                     quality_store=self.quality, pool_store=pool,
                     namespace=self.namespace, data_version=self.data_version,
-                    assessor=assessor, config=self.pool_config,
+                    config=self.pool_config,
                     schema_context=self.schema_context,
                     execution_ids=(execution_id,), retry_failed=retry_incomplete,
                 )
 
-            maintained = stage("maintenance", maintain, may_call_model=True)
+            maintained = stage("maintenance", maintain)
             if maintained["error_count"]:
                 needs_retry("maintenance", "标注或成员更新失败，请审阅 update.json 后显式重试")
             def rebuild_index():

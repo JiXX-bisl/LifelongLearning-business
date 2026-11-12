@@ -1,7 +1,6 @@
-"""确定性的成员选择：adaptive 质量排序与难度平衡、FIFO 插入顺序。"""
+"""确定性的成员选择：adaptive 质量排序、FIFO 插入顺序。"""
 from __future__ import annotations
 
-from collections import deque
 from collections.abc import Iterable, Mapping
 
 from ..evaluation.quality_models import QualityDecision
@@ -10,6 +9,9 @@ from .pool_models import (
     DIFFICULTY_LEVELS, GROUP_RULE_VERSION, ContentKey, DifficultyResult, GroupingDecision,
     PoolCandidate, PoolSnapshot, RankedCandidate, RankValue, SelectionPlan, require_text,
 )
+
+
+POOL_SELECTION_VERSION = "quality_without_difficulty_v2"
 
 
 def has_sql_result_pass(quality: QualityDecision) -> bool:
@@ -95,7 +97,7 @@ class BasicRankingPolicy:
 def _current_eligible(candidate: PoolCandidate, current_versions: Mapping[str, str]) -> bool:
     return (current_versions.get(candidate.execution_id) == candidate.content_version
             and candidate.admission_state == "eligible"
-            and candidate.group_id is not None and candidate.difficulty is not None)
+            and candidate.group_id is not None)
 
 
 def _unique_candidates(candidates, *, namespace, data_version):
@@ -125,18 +127,11 @@ def plan_group_update(*, snapshot: PoolSnapshot, candidates: Iterable[PoolCandid
                      if candidate.group_id == scope.group_id
                      and _current_eligible(candidate, current_versions)),
                     key=RankedCandidate.order_key)
-    queues = {level: deque() for level in DIFFICULTY_LEVELS}
-    for item in ranked:
-        queues[item.candidate.difficulty].append(item)
-    counts = {level: 0 for level in DIFFICULTY_LEVELS}
-    selected = []
-    while len(selected) < capacity:
-        available = [level for level, queue in queues.items() if queue]
-        if not available:
-            break
-        level = min(available, key=lambda value: (counts[value], queues[value][0].order_key()))
-        selected.append(queues[level].popleft().candidate.key)
-        counts[level] += 1
+    # 难度仅作可选统计标签；组内名额完全按现有质量和效率排序。
+    chosen = ranked[:capacity]
+    selected = [item.candidate.key for item in chosen]
+    counts = {level: sum(item.candidate.difficulty == level for item in chosen)
+              for level in DIFFICULTY_LEVELS}
     selected_set = set(selected)
     return SelectionPlan(
         scope=scope, capacity=capacity, selected=tuple(selected),

@@ -12,6 +12,8 @@ from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
+from src.project_paths import resolve_project_path
+from ..history.source_checks import inspect_source
 from ..evaluation.quality_models import QualityDecision
 from .pool_models import (
     GROUP_IDS,
@@ -26,12 +28,12 @@ from .pool_models import (
     PoolSnapshot,
     RuleMatch,
 )
-from .selection import candidate_from_evaluations, has_sql_result_pass, plan_group_update, select_fifo_members
+from .selection import POOL_SELECTION_VERSION, candidate_from_evaluations, has_sql_result_pass, plan_group_update, select_fifo_members
 
 from ._common import canonical_json, require_text, sha256_text
 
 
-POOL_SCHEMA_VERSION = 3
+POOL_SCHEMA_VERSION = 4
 _COMPONENT = "psu_memory_pool"
 
 
@@ -71,8 +73,8 @@ _SCHEMA += (
         content_version TEXT NOT NULL,
         annotation_sha256 TEXT NOT NULL,
         grouping_json TEXT NOT NULL,
-        cache_key TEXT NOT NULL,
-        assessment_sha256 TEXT NOT NULL,
+        cache_key TEXT,
+        assessment_sha256 TEXT,
         quality_sha256 TEXT NOT NULL,
         created_at TEXT NOT NULL,
         PRIMARY KEY (
@@ -313,6 +315,7 @@ class SQLitePoolStore:
         *,
         write: bool = False,
         require_pool: bool = True,
+        foreign_keys: bool = True,
     ):
         """每次操作使用独立连接；写操作在一个事务内完成。"""
         mode = "rw" if write else "ro"
@@ -324,7 +327,7 @@ class SQLitePoolStore:
         )
 
         try:
-            connection.execute("PRAGMA foreign_keys = ON")
+            connection.execute("PRAGMA foreign_keys = " + ("ON" if foreign_keys else "OFF"))
 
             with connection:
                 connection.execute(
@@ -356,7 +359,8 @@ class SQLitePoolStore:
         """追加组件表，不创建新的历史库"""
         with self._connection(
             write=True,
-            require_pool=False
+            require_pool=False,
+            foreign_keys=False,
         ) as connection:
             existing_tables = {
                 row[0]
@@ -389,7 +393,7 @@ class SQLitePoolStore:
 
             if (
                 registered is not None
-                and registered[0] not in (1, 2, POOL_SCHEMA_VERSION)
+                and registered[0] not in (1, 2, 3, POOL_SCHEMA_VERSION)
             ):
                 raise ValueError(
                     f"不支持的经验池存储版本: {registered[0]}"
@@ -397,6 +401,18 @@ class SQLitePoolStore:
             
             for statement in _SCHEMA[1:]:
                 connection.execute(statement)
+
+            if registered is not None and registered[0] < 4:
+                # 工作副本升级：只放开可选难度引用，保留所有原标注、成员与索引。
+                annotation_schema = next(statement for statement in _SCHEMA
+                                         if "CREATE TABLE IF NOT EXISTS psu_pool_annotations (" in statement)
+                connection.execute(annotation_schema.replace(
+                    "psu_pool_annotations (", "psu_pool_annotations_v4 (", 1))
+                connection.execute("INSERT INTO psu_pool_annotations_v4 SELECT * FROM psu_pool_annotations")
+                connection.execute("DROP TABLE psu_pool_annotations")
+                connection.execute("ALTER TABLE psu_pool_annotations_v4 RENAME TO psu_pool_annotations")
+            if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise ValueError("经验池升级后外键核对失败，已撤销升级")
 
             connection.execute(
                 """
@@ -533,15 +549,17 @@ class SQLitePoolStore:
         source: dict,
         *, 
         grouping: GroupingDecision,
-        difficulty: DifficultyResult
+        difficulty: DifficultyResult | None = None
     ) -> dict:
         started = perf_counter()
         identity = source["identity"]
         grouping_json = canonical_json(asdict(grouping))
-        assessment_sha = sha256_text(canonical_json(asdict(difficulty.assessment)))
+        assessment_sha = (sha256_text(canonical_json(asdict(difficulty.assessment)))
+                          if difficulty is not None else None)
+        cache_key = difficulty.assessment.cache_key if difficulty is not None else None
         annotation_sha = sha256_text(canonical_json([
             asdict(grouping),
-            difficulty.assessment.cache_key,
+            cache_key,
             assessment_sha
         ]))
 
@@ -573,9 +591,10 @@ class SQLitePoolStore:
                 data_version=identity["data_version"]
             )
 
-            cached = self._read_cache(connection, difficulty.assessment.cache_key)
-            if cached is None or sha256_text(canonical_json(asdict(cached))) != assessment_sha:
-                raise RuntimeError("难度结果不是当前持久化结果")
+            if difficulty is not None:
+                cached = self._read_cache(connection, cache_key)
+                if cached is None or sha256_text(canonical_json(asdict(cached))) != assessment_sha:
+                    raise RuntimeError("难度结果不是当前持久化结果")
             
             # 相同标注重复提交不新增版本，也不移除成员。
             if current["annotation_sha256"] == annotation_sha:
@@ -606,7 +625,7 @@ class SQLitePoolStore:
                     identity["content_version"],
                     annotation_sha,
                     grouping_json,
-                    difficulty.assessment.cache_key,
+                    cache_key,
                     assessment_sha,
                     current["quality_sha256"],
                     _now(),
@@ -634,7 +653,7 @@ class SQLitePoolStore:
                 namespace=identity["namespace"], data_version=identity["data_version"],
             )
             previous_group = current["grouping"].group_id if current["grouping"] is not None else None
-            preserve_member = (candidate.group_id is not None and candidate.difficulty is not None
+            preserve_member = (candidate.group_id is not None
                                and (config.strategy == "fifo" or previous_group == candidate.group_id))
             if preserve_member:
                 # 同一内容的有效重标注保留队列位置/原成员身份，已淘汰候选不会复活。
@@ -688,6 +707,25 @@ class SQLitePoolStore:
             """,
             (scope.namespace, scope.data_version, scope.group_id),
         ).fetchall()
+
+    @staticmethod
+    def _source_is_current(connection, execution_id):
+        # 质量结论只绑定保存时的来源；检索前排除之后被改写的结果文件。
+        row = connection.execute(
+            "SELECT record_json, source_sha256, import_state FROM history_records WHERE execution_id=?",
+            (execution_id,),
+        ).fetchone()
+        if row is None:
+            return False
+        locations = [item[0] for item in connection.execute(
+            "SELECT source_ref FROM source_locations WHERE execution_id=? AND source_sha256=?",
+            (execution_id, row[1]),
+        )]
+        record = json.loads(row[0])
+        source = inspect_source(record, row[1], row[2], resolve_project_path, locations)
+        if record.get("mode") == "sql_learning_v2":
+            return source["status"] == "verified"
+        return source["status"] != "conflict"
 
     def _read_active_members(
         self,
@@ -751,13 +789,15 @@ class SQLitePoolStore:
                 if annotation_sha != entry["annotation_sha256"]:
                     continue
 
+                if not self._source_is_current(connection, execution_id):
+                    continue
+
                 # 复用已有评价投影，不重新评价或重新判断难度。
                 candidate = self._candidate(entry)
 
                 if (
                     candidate.admission_state != "eligible"
                     or candidate.group_id != group
-                    or candidate.difficulty is None
                 ):
                     continue
 
@@ -908,8 +948,7 @@ class SQLitePoolStore:
                 )
                 # 只有当前已可入队的候选才标记见过；失败标注之后可显式重试。
                 eligible_keys = {candidate.key for candidate in candidates
-                                 if candidate.admission_state == "eligible" and candidate.group_id is not None
-                                 and candidate.difficulty is not None}
+                                 if candidate.admission_state == "eligible" and candidate.group_id is not None}
                 for key in (*tuple(before), *new_keys):
                     if key in eligible_keys:
                         connection.execute("INSERT OR IGNORE INTO psu_pool_fifo_seen VALUES (?, ?, ?, ?)",
@@ -944,7 +983,8 @@ class SQLitePoolStore:
                 )
             self._write_config(connection, namespace, data_version, effective)
             report = {"operation": "sync", "namespace": namespace, "data_version": data_version,
-                      "config": effective.to_dict(), "changed": before != after,
+                      "config": effective.to_dict(), "selection_version": POOL_SELECTION_VERSION,
+                      "changed": before != after,
                       "selected_count": len(after), "added_count": len(after.keys() - before.keys()),
                       "removed_count": len(before.keys() - after.keys()),
                       "retained_count": len(before.keys() & after.keys()), "usage": _local_usage(started)}

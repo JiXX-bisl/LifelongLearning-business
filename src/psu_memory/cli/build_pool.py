@@ -54,8 +54,6 @@ def main() -> int:
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
-    if not args.sync_only and args.model_config is None:
-        parser.error("准备标注需要 --model-config；仅更新请使用 --sync-only")
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit 必须大于零")
 
@@ -101,7 +99,7 @@ def main() -> int:
         )
 
         assessor = None
-        if not args.sync_only:
+        if not args.sync_only and args.model_config is not None:
             client = LocalDifficultyClient.from_yaml(
                 args.model_config.expanduser(),
                 model_name=args.model_name,
