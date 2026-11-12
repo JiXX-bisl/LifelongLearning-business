@@ -182,10 +182,17 @@ def _infer_projection(actual_columns, expected_columns, raw_actual, expected_row
     """
     actual_names = [name.strip().casefold() for name in actual_columns]
     expected_names = [name.strip().casefold() for name in expected_columns]
-    normalized, candidates = {}, []
-    for expected_index, name in enumerate(expected_names):
-        locked = bool(name and expected_names.count(name) == 1 and actual_names.count(name) == 1)
-        choices = [actual_names.index(name)] if locked else range(len(actual_columns))
+    locked_columns = {index: actual_names.index(name)
+                      for index, name in enumerate(expected_names)
+                      if name and expected_names.count(name) == 1 and actual_names.count(name) == 1}
+    # Validate known required columns before value-mismatch early returns, so
+    # malformed required evidence stays UNKNOWN regardless of column order.
+    normalized = {index: tuple(_scalar(row[index], policy.numeric_strings) for row in raw_actual)
+                  for index in locked_columns.values()}
+    candidates = []
+    for expected_index in range(len(expected_names)):
+        choices = ([locked_columns[expected_index]] if expected_index in locked_columns
+                   else range(len(actual_columns)))
         matches = []
         expected_column = [(row[expected_index],) for row in expected_rows]
         for actual_index in choices:
@@ -194,12 +201,8 @@ def _infer_projection(actual_columns, expected_columns, raw_actual, expected_row
                     normalized[actual_index] = tuple(_scalar(row[actual_index], policy.numeric_strings)
                                                      for row in raw_actual)
                 except (ValueError, TypeError, InvalidOperation, OverflowError):
-                    if locked:
-                        raise
                     normalized[actual_index] = None  # An invalid auxiliary column cannot satisfy a value.
             values = normalized[actual_index]
-            if locked and values is None:
-                raise ValueError("invalid required column value")
             if values is not None and _rows_equal([(value,) for value in values], expected_column, policy):
                 matches.append(actual_index)
         if not matches:

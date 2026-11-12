@@ -146,6 +146,8 @@ def test_invalid_auxiliary_cells_are_ignored_but_required_and_partial_evidence_a
     # The invalid named column is visited first as an alias candidate, then as required.
     invalid = table([[1, float("nan"), "note"]], ("x", "value", "note"))
     assert compare_results(invalid, table([[1, 2]], ("alias", "value"))).status == "UNKNOWN"
+    assert compare_results(invalid, table([[99, 2]], ("alias", "value"))).status == "UNKNOWN"
+    assert compare_results(invalid, table([[2, 99]], ("value", "alias"))).status == "UNKNOWN"
     assert compare_results(table([[1, "x"]], ("value", "note"), is_complete=False), expected).status == "UNKNOWN"
 
 
